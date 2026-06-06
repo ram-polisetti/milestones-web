@@ -399,16 +399,29 @@ struct TaskComposer: View {
     let submit: () -> Void
 
     private var isExpanded: Bool {
-        focused.wrappedValue || showDescription || !selectedTags.isEmpty || priority != .none || dueDate != nil || recurrence != nil || stage != .todo
+        focused.wrappedValue
+            || !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || showDescription
+            || !selectedTags.isEmpty
+            || priority != .none
+            || dueDate != nil
+            || recurrence != nil
+            || stage != .todo
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            TextField("Add a new task…", text: $text, axis: .vertical)
-                .lineLimit(isExpanded ? 3 : 1)
-                .focused(focused)
-                .submitLabel(.send)
-                .onSubmit(submit)
+            HStack(spacing: 9) {
+                if !isExpanded {
+                    Image(systemName: "plus.circle.fill")
+                        .foregroundStyle(.secondary)
+                }
+                TextField("Add a new task…", text: $text, axis: .vertical)
+                    .lineLimit(isExpanded ? 3 : 1)
+                    .focused(focused)
+                    .submitLabel(.send)
+                    .onSubmit(submit)
+            }
 
             if showDescription {
                 Divider()
@@ -427,92 +440,90 @@ struct TaskComposer: View {
                 )
             }
 
-            HStack(spacing: 8) {
-                Menu {
-                    if availableTags.isEmpty {
-                        Text("Create tags in Settings")
-                    } else {
-                        ForEach(availableTags, id: \.self) { tag in
-                            Button {
-                                if selectedTags.contains(tag) {
-                                    selectedTags.remove(tag)
-                                } else {
-                                    selectedTags.insert(tag)
+            if isExpanded {
+                HStack(spacing: 8) {
+                    Menu {
+                        if availableTags.isEmpty {
+                            Text("Create tags in Settings")
+                        } else {
+                            ForEach(availableTags, id: \.self) { tag in
+                                Button {
+                                    if selectedTags.contains(tag) {
+                                        selectedTags.remove(tag)
+                                    } else {
+                                        selectedTags.insert(tag)
+                                    }
+                                } label: {
+                                    Label(tag, systemImage: selectedTags.contains(tag) ? "checkmark" : "tag")
                                 }
-                            } label: {
-                                Label(tag, systemImage: selectedTags.contains(tag) ? "checkmark" : "tag")
                             }
                         }
+                    } label: {
+                        ComposerButton(systemImage: "number", active: !selectedTags.isEmpty)
                     }
-                } label: {
-                    ComposerButton(systemImage: "number", active: !selectedTags.isEmpty)
-                }
-                .accessibilityLabel("Tags")
+                    .accessibilityLabel("Tags")
 
-                Button {
-                    showDueDatePicker = true
-                } label: {
-                    ComposerButton(systemImage: "calendar", active: dueDate != nil)
-                }
-                .accessibilityLabel("Due date")
-
-                Button {
-                    withAnimation(.snappy) { showDescription.toggle() }
-                } label: {
-                    ComposerButton(systemImage: "text.alignleft", active: showDescription || !notes.isEmpty)
-                }
-                .accessibilityLabel("Description")
-
-                Menu {
-                    Button("No recurrence") { recurrence = nil }
-                    ForEach(TaskRecurrence.allCases) { option in
-                        Button {
-                            recurrence = option
-                        } label: {
-                            Label(option.rawValue, systemImage: recurrence == option ? "checkmark" : "repeat")
-                        }
+                    Button {
+                        showDueDatePicker = true
+                    } label: {
+                        ComposerButton(systemImage: "calendar", active: dueDate != nil)
                     }
-                } label: {
-                    ComposerButton(systemImage: recurrence == nil ? "lock.fill" : "repeat", active: recurrence != nil)
-                }
-                .accessibilityLabel("Recurrence")
+                    .accessibilityLabel("Due date")
 
-                Menu {
-                    Section("Status") {
-                        ForEach(TaskStage.allCases) { option in
+                    Button {
+                        withAnimation(.snappy) { showDescription.toggle() }
+                    } label: {
+                        ComposerButton(systemImage: "text.alignleft", active: showDescription || !notes.isEmpty)
+                    }
+                    .accessibilityLabel("Description")
+
+                    Menu {
+                        Button("No recurrence") { recurrence = nil }
+                        ForEach(TaskRecurrence.allCases) { option in
                             Button {
-                                stage = option
+                                recurrence = option
                             } label: {
-                                Label(option.rawValue, systemImage: stage == option ? "checkmark" : "circle.fill")
+                                Label(option.rawValue, systemImage: recurrence == option ? "checkmark" : "repeat")
                             }
                         }
+                    } label: {
+                        ComposerButton(systemImage: recurrence == nil ? "lock.fill" : "repeat", active: recurrence != nil)
                     }
-                    Section("Priority") {
-                        ForEach(TaskPriority.allCases) { option in
-                            Button {
-                                priority = option
-                            } label: {
-                                Label(option.rawValue, systemImage: priority == option ? "checkmark" : option.symbol)
+                    .accessibilityLabel("Recurrence")
+
+                    Menu {
+                        Section("Status") {
+                            ForEach(TaskStage.allCases) { option in
+                                Button {
+                                    stage = option
+                                } label: {
+                                    Label(option.rawValue, systemImage: stage == option ? "checkmark" : "circle.fill")
+                                }
                             }
                         }
+                        Section("Priority") {
+                            ForEach(TaskPriority.allCases) { option in
+                                Button {
+                                    priority = option
+                                } label: {
+                                    Label(option.rawValue, systemImage: priority == option ? "checkmark" : option.symbol)
+                                }
+                            }
+                        }
+                    } label: {
+                        ComposerButton(systemImage: "flag", active: priority != .none || stage != .todo)
                     }
-                } label: {
-                    ComposerButton(systemImage: "flag", active: priority != .none || stage != .todo)
-                }
-                .accessibilityLabel("Status and priority")
+                    .accessibilityLabel("Status and priority")
 
-                Spacer()
+                    Spacer()
 
-                if focused.wrappedValue {
                     Button {
                         focused.wrappedValue = false
                     } label: {
                         ComposerButton(systemImage: "keyboard.chevron.compact.down", active: false)
                     }
                     .accessibilityLabel("Dismiss keyboard")
-                }
 
-                if isExpanded {
                     Button(action: submit) {
                         Image(systemName: "arrow.up")
                             .font(.headline.weight(.semibold))
@@ -526,17 +537,24 @@ struct TaskComposer: View {
                 }
             }
         }
-        .padding(14)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 22))
+        .padding(.horizontal, isExpanded ? 14 : 13)
+        .padding(.vertical, isExpanded ? 14 : 11)
+        .background(
+            isExpanded ? AnyShapeStyle(.regularMaterial) : AnyShapeStyle(Color(uiColor: .tertiarySystemFill)),
+            in: isExpanded ? AnyShape(RoundedRectangle(cornerRadius: 22)) : AnyShape(Capsule())
+        )
         .overlay {
-            RoundedRectangle(cornerRadius: 22)
-                .strokeBorder(.white.opacity(0.75), lineWidth: 0.5)
+            if isExpanded {
+                RoundedRectangle(cornerRadius: 22)
+                    .strokeBorder(.white.opacity(0.75), lineWidth: 0.5)
+            }
         }
-        .shadow(color: .black.opacity(0.12), radius: 18, y: 8)
-        .padding(.horizontal, 7)
-        .padding(.vertical, 8)
+        .shadow(color: .black.opacity(isExpanded ? 0.12 : 0.04), radius: isExpanded ? 18 : 5, y: isExpanded ? 8 : 2)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 9)
         .background(.clear)
         .onTapGesture { focused.wrappedValue = true }
+        .animation(.snappy, value: isExpanded)
     }
 }
 
