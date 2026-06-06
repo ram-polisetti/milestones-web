@@ -416,8 +416,9 @@ struct TaskComposer: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 9) {
                 if !isExpanded {
-                    Image(systemName: "plus.circle.fill")
-                        .foregroundStyle(.secondary)
+                    Image(systemName: "plus")
+                        .font(.body.weight(.medium))
+                        .foregroundStyle(.primary)
                 }
                 TextField("Add a new task…", text: $text, axis: .vertical)
                     .lineLimit(isExpanded ? 3 : 1)
@@ -541,24 +542,23 @@ struct TaskComposer: View {
             }
         }
         .padding(.horizontal, isExpanded ? 14 : 13)
-        .padding(.vertical, isExpanded ? 14 : 11)
+        .padding(.vertical, isExpanded ? 14 : 12)
         .background(
-            isExpanded ? AnyShapeStyle(.thickMaterial) : AnyShapeStyle(Color(uiColor: .systemGray5)),
+            isExpanded ? AnyShapeStyle(.thickMaterial) : AnyShapeStyle(Color(uiColor: .systemBackground)),
             in: isExpanded ? AnyShape(RoundedRectangle(cornerRadius: 22)) : AnyShape(Capsule())
         )
         .overlay {
             if isExpanded {
                 RoundedRectangle(cornerRadius: 22)
                     .strokeBorder(.white.opacity(0.75), lineWidth: 0.5)
-            } else {
-                Capsule()
-                    .strokeBorder(Color(uiColor: .separator).opacity(0.18), lineWidth: 0.5)
             }
         }
-        .shadow(color: .black.opacity(isExpanded ? 0.12 : 0.09), radius: isExpanded ? 18 : 8, y: isExpanded ? 8 : 3)
-        .padding(.horizontal, 16)
-        .padding(.vertical, 9)
+        .shadow(color: .black.opacity(isExpanded ? 0.12 : 0.13), radius: isExpanded ? 18 : 20, y: isExpanded ? 8 : 9)
+        .padding(.horizontal, isExpanded ? 16 : 26)
+        .padding(.top, 9)
+        .padding(.bottom, isExpanded ? 9 : 0)
         .background(.clear)
+        .ignoresSafeArea(.container, edges: .bottom)
         .onTapGesture { focused.wrappedValue = true }
         .animation(.snappy, value: isExpanded)
     }
