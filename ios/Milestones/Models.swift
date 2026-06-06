@@ -119,4 +119,21 @@ extension Color {
         let blue = Double(value & 0xFF) / 255
         self.init(red: red, green: green, blue: blue)
     }
+
+    var hexString: String {
+        let uiColor = UIColor(self)
+        var red: CGFloat = 0
+        var green: CGFloat = 0
+        var blue: CGFloat = 0
+        var alpha: CGFloat = 0
+        guard uiColor.getRed(&red, green: &green, blue: &blue, alpha: &alpha) else {
+            return "#159EF2"
+        }
+        return String(
+            format: "#%02X%02X%02X",
+            Int((red * 255).rounded()),
+            Int((green * 255).rounded()),
+            Int((blue * 255).rounded())
+        )
+    }
 }

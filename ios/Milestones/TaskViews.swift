@@ -400,16 +400,21 @@ struct TaskComposer: View {
     var focused: FocusState<Bool>.Binding
     let availableTags: [String]
     let submit: () -> Void
+    @State private var showOptions = false
 
-    private var isExpanded: Bool {
-        focused.wrappedValue
-            || !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            || showDescription
+    private var hasDraftDetails: Bool {
+        showDescription
             || !selectedTags.isEmpty
             || priority != .none
             || dueDate != nil
             || recurrence != nil
             || stage != .todo
+    }
+
+    private var isExpanded: Bool {
+        focused.wrappedValue
+            || !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || hasDraftDetails
     }
 
     var body: some View {
@@ -434,7 +439,7 @@ struct TaskComposer: View {
                     .font(.subheadline)
             }
 
-            if isExpanded {
+            if showOptions {
                 ComposerMetadata(
                     tags: Array(selectedTags).sorted(),
                     priority: priority,
@@ -444,7 +449,7 @@ struct TaskComposer: View {
                 )
             }
 
-            if isExpanded {
+            if showOptions {
                 HStack(spacing: 8) {
                     Menu {
                         if availableTags.isEmpty {
@@ -491,7 +496,7 @@ struct TaskComposer: View {
                             }
                         }
                     } label: {
-                        ComposerButton(systemImage: recurrence == nil ? "lock.fill" : "repeat", active: recurrence != nil)
+                        ComposerButton(systemImage: "repeat", active: recurrence != nil)
                     }
                     .accessibilityLabel("Recurrence")
 
@@ -539,6 +544,7 @@ struct TaskComposer: View {
                     .opacity(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? 0.45 : 1)
                     .accessibilityLabel("Add task")
                 }
+                .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
         .padding(.horizontal, isExpanded ? 14 : 13)
@@ -561,6 +567,18 @@ struct TaskComposer: View {
         .ignoresSafeArea(.container, edges: .bottom)
         .onTapGesture { focused.wrappedValue = true }
         .animation(.snappy, value: isExpanded)
+        .task(id: focused.wrappedValue) {
+            if focused.wrappedValue {
+                showOptions = false
+                try? await Task.sleep(for: .milliseconds(450))
+                guard !Task.isCancelled, focused.wrappedValue else { return }
+                withAnimation(.easeInOut(duration: 0.35)) {
+                    showOptions = true
+                }
+            } else if !hasDraftDetails && text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                showOptions = false
+            }
+        }
     }
 }
 
@@ -571,9 +589,9 @@ struct ComposerButton: View {
     var body: some View {
         Image(systemName: systemImage)
             .font(.body.weight(.medium))
-            .foregroundStyle(active ? .blue : .secondary)
+            .foregroundStyle(active ? .blue : .primary)
             .frame(width: 36, height: 36)
-            .background(active ? Color.blue.opacity(0.12) : Color(uiColor: .tertiarySystemFill), in: Circle())
+            .background(active ? Color.blue.opacity(0.12) : Color(uiColor: .systemGray5), in: Circle())
     }
 }
 

@@ -177,7 +177,7 @@ struct ProjectRow: View {
             ZStack {
                 RoundedRectangle(cornerRadius: 10)
                     .fill(Color(hex: project.color).gradient)
-                Image(systemName: project.symbol)
+                ProjectIcon(value: project.symbol)
                     .font(.title3)
                     .foregroundStyle(.white)
             }

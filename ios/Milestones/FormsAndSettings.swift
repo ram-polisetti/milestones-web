@@ -1,14 +1,66 @@
 import SwiftUI
+import UIKit
 
 struct ProjectForm: View {
     @Environment(\.dismiss) private var dismiss
     @State private var title = ""
     @State private var symbol = "iphone"
     @State private var color = "#159EF2"
+    @State private var iconKind = IconKind.symbols
+    @State private var iconSearch = ""
+    @State private var customEmoji = ""
+    @State private var customSymbol = ""
+    @State private var customColor = Color(hex: "#159EF2")
     let onSave: (String, String, String) -> Void
 
-    private let symbols = ["iphone", "globe", "book.closed.fill", "envelope.fill", "mic.fill", "gamecontroller.fill"]
-    private let colors = ["#159EF2", "#B31FC3", "#ED8508", "#E91849", "#EF3032", "#19B957"]
+    private enum IconKind: String, CaseIterable, Identifiable {
+        case symbols = "Symbols"
+        case emoji = "Emoji"
+
+        var id: String { rawValue }
+    }
+
+    private let symbols = [
+        "iphone", "ipad", "laptopcomputer", "desktopcomputer", "applewatch", "visionpro",
+        "globe", "network", "wifi", "antenna.radiowaves.left.and.right", "link", "server.rack",
+        "folder.fill", "doc.fill", "book.closed.fill", "books.vertical.fill", "newspaper.fill", "note.text",
+        "envelope.fill", "message.fill", "bubble.left.and.bubble.right.fill", "phone.fill", "video.fill", "mic.fill",
+        "camera.fill", "photo.fill", "music.note", "headphones", "play.rectangle.fill", "film.fill",
+        "paintbrush.fill", "pencil.and.outline", "scribble.variable", "wand.and.stars", "sparkles", "theatermasks.fill",
+        "briefcase.fill", "building.2.fill", "chart.bar.fill", "chart.line.uptrend.xyaxis", "creditcard.fill", "dollarsign.circle.fill",
+        "cart.fill", "bag.fill", "shippingbox.fill", "tag.fill", "gift.fill", "storefront.fill",
+        "hammer.fill", "wrench.and.screwdriver.fill", "gearshape.fill", "cpu.fill", "terminal.fill", "curlybraces",
+        "gamecontroller.fill", "puzzlepiece.fill", "dice.fill", "trophy.fill", "medal.fill", "flag.fill",
+        "figure.run", "figure.strengthtraining.traditional", "bicycle", "soccerball", "basketball.fill", "tennis.racket",
+        "airplane", "car.fill", "tram.fill", "ferry.fill", "map.fill", "location.fill",
+        "house.fill", "bed.double.fill", "fork.knife", "cup.and.saucer.fill", "birthday.cake.fill", "leaf.fill",
+        "heart.fill", "star.fill", "bolt.fill", "flame.fill", "lightbulb.fill", "target",
+        "person.fill", "person.2.fill", "person.3.fill", "graduationcap.fill", "cross.case.fill", "pawprint.fill",
+        "calendar", "clock.fill", "alarm.fill", "checkmark.circle.fill", "list.bullet.clipboard.fill", "rectangle.stack.fill"
+    ]
+
+    private let emojis = [
+        "😀", "😎", "🤓", "🥳", "🤩", "🫡", "💡", "🔥", "✨", "⭐", "❤️", "🎯",
+        "🚀", "✈️", "🚗", "🚲", "🏠", "🏢", "🏗️", "🗺️", "🌎", "🌱", "🌈", "☀️",
+        "💻", "📱", "⌚", "🎮", "📷", "🎧", "🎙️", "🎬", "🎨", "✏️", "📚", "📰",
+        "💼", "📊", "📈", "💰", "💳", "🛍️", "📦", "🏷️", "🔧", "⚙️", "🧪", "🔬",
+        "✅", "📋", "📅", "⏰", "📌", "🔖", "🔐", "🔑", "🏆", "🥇", "🎁", "🎉",
+        "🏃", "🏋️", "⚽", "🏀", "🎾", "⛳", "🍎", "☕", "🍽️", "🧘", "🩺", "💊",
+        "👤", "👥", "🤝", "🧑‍💻", "🧑‍🎨", "🧑‍🚀", "🐶", "🐱", "🦊", "🦁", "🐼", "🦄"
+    ]
+
+    private let colors = [
+        "#159EF2", "#0066CC", "#5856D6", "#7D5FFF", "#B31FC3", "#AF52DE",
+        "#E91849", "#FF2D55", "#EF3032", "#FF453A", "#ED8508", "#FF9F0A",
+        "#E4C342", "#FFD60A", "#19B957", "#30C968", "#34C759", "#00A98F",
+        "#00C7BE", "#32ADE6", "#5AC8FA", "#8E8E93", "#6D6D72", "#2C2C2E"
+    ]
+
+    private var filteredSymbols: [String] {
+        let query = iconSearch.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty else { return symbols }
+        return symbols.filter { $0.localizedCaseInsensitiveContains(query) }
+    }
 
     var body: some View {
         NavigationStack {
@@ -17,29 +69,95 @@ struct ProjectForm: View {
                     TextField("Project name", text: $title)
                 }
                 Section("Icon") {
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 6)) {
-                        ForEach(symbols, id: \.self) { item in
-                            Button {
-                                symbol = item
-                            } label: {
-                                Image(systemName: item)
-                                    .frame(width: 38, height: 38)
-                                    .background(symbol == item ? Color.blue.opacity(0.15) : .clear)
-                                    .clipShape(RoundedRectangle(cornerRadius: 9))
+                    HStack(spacing: 12) {
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color(hex: color).gradient)
+                            .frame(width: 54, height: 54)
+                            .overlay {
+                                ProjectIcon(value: symbol)
+                                    .font(.title2)
+                                    .foregroundStyle(.white)
                             }
-                            .buttonStyle(.plain)
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(title.isEmpty ? "Project preview" : title)
+                                .font(.headline)
+                            Text(UIImage(systemName: symbol) == nil ? "Emoji" : "SF Symbol")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
                         }
+                    }
+
+                    Picker("Icon type", selection: $iconKind) {
+                        ForEach(IconKind.allCases) { kind in
+                            Text(kind.rawValue).tag(kind)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+
+                    if iconKind == .symbols {
+                        TextField("Search symbols", text: $iconSearch)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+
+                        ScrollView {
+                            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 6), spacing: 8) {
+                                ForEach(filteredSymbols, id: \.self) { item in
+                                    IconChoice(selected: symbol == item) {
+                                        ProjectIcon(value: item)
+                                    } action: {
+                                        symbol = item
+                                    }
+                                }
+                            }
+                            .padding(.vertical, 4)
+                        }
+                        .frame(height: 190)
+
+                        HStack {
+                            TextField("Any SF Symbol name", text: $customSymbol)
+                                .textInputAutocapitalization(.never)
+                                .autocorrectionDisabled()
+                            Button("Use") {
+                                let candidate = customSymbol.trimmingCharacters(in: .whitespacesAndNewlines)
+                                if UIImage(systemName: candidate) != nil {
+                                    symbol = candidate
+                                }
+                            }
+                        }
+                    } else {
+                        TextField("Type or paste any emoji", text: $customEmoji)
+                            .onChange(of: customEmoji) { _, value in
+                                guard let emoji = value.first else { return }
+                                symbol = String(emoji)
+                            }
+
+                        ScrollView {
+                            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 6), spacing: 8) {
+                                ForEach(emojis, id: \.self) { item in
+                                    IconChoice(selected: symbol == item) {
+                                        Text(item)
+                                            .font(.title2)
+                                    } action: {
+                                        symbol = item
+                                        customEmoji = item
+                                    }
+                                }
+                            }
+                            .padding(.vertical, 4)
+                        }
+                        .frame(height: 190)
                     }
                 }
                 Section("Color") {
-                    HStack {
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 8), spacing: 12) {
                         ForEach(colors, id: \.self) { item in
                             Button {
                                 color = item
+                                customColor = Color(hex: item)
                             } label: {
                                 Circle()
                                     .fill(Color(hex: item))
-                                    .frame(width: 30, height: 30)
+                                    .frame(width: 28, height: 28)
                                     .overlay {
                                         if color == item {
                                             Circle().stroke(.primary, lineWidth: 2).padding(-3)
@@ -49,6 +167,10 @@ struct ProjectForm: View {
                             .buttonStyle(.plain)
                         }
                     }
+                    ColorPicker("Custom color", selection: $customColor, supportsOpacity: false)
+                        .onChange(of: customColor) { _, value in
+                            color = value.hexString
+                        }
                 }
             }
             .navigationTitle("New Project")
@@ -65,7 +187,41 @@ struct ProjectForm: View {
                 }
             }
         }
-        .presentationDetents([.medium, .large])
+        .presentationDetents([.large])
+    }
+}
+
+struct ProjectIcon: View {
+    let value: String
+
+    var body: some View {
+        if UIImage(systemName: value) != nil {
+            Image(systemName: value)
+        } else {
+            Text(value)
+        }
+    }
+}
+
+private struct IconChoice<Content: View>: View {
+    let selected: Bool
+    @ViewBuilder let content: () -> Content
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            content()
+                .frame(width: 40, height: 40)
+                .background(selected ? Color.accentColor.opacity(0.16) : Color(uiColor: .secondarySystemGroupedBackground))
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .overlay {
+                    if selected {
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(Color.accentColor, lineWidth: 1.5)
+                    }
+                }
+        }
+        .buttonStyle(.plain)
     }
 }
 
