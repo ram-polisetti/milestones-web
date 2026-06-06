@@ -1,3 +1,8 @@
 node_modules/
 dist/
 .DS_Store
+ios/build/
+ios/*.png
+ios/*.xcuserstate
+ios/Milestones.xcodeproj/project.xcworkspace/xcuserdata/
+ios/Milestones.xcodeproj/xcuserdata/
