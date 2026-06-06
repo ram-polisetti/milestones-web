@@ -578,14 +578,14 @@ struct TaskComposer: View {
         .animation(.snappy, value: isExpanded)
         .task(id: composerActivated) {
             guard composerActivated else { return }
-            try? await Task.sleep(for: .milliseconds(400))
+            try? await Task.sleep(for: .milliseconds(200))
             guard !Task.isCancelled, composerActivated else { return }
             focused.wrappedValue = true
         }
     }
 
     private func activateComposer() {
-        withAnimation(.easeInOut(duration: 0.32)) {
+        withAnimation(.easeInOut(duration: 0.18)) {
             composerActivated = true
             showOptions = true
         }
