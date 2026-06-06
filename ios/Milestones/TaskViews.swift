@@ -543,16 +543,19 @@ struct TaskComposer: View {
         .padding(.horizontal, isExpanded ? 14 : 13)
         .padding(.vertical, isExpanded ? 14 : 11)
         .background(
-            isExpanded ? AnyShapeStyle(.regularMaterial) : AnyShapeStyle(Color(uiColor: .tertiarySystemFill)),
+            isExpanded ? AnyShapeStyle(.thickMaterial) : AnyShapeStyle(Color(uiColor: .systemGray5)),
             in: isExpanded ? AnyShape(RoundedRectangle(cornerRadius: 22)) : AnyShape(Capsule())
         )
         .overlay {
             if isExpanded {
                 RoundedRectangle(cornerRadius: 22)
                     .strokeBorder(.white.opacity(0.75), lineWidth: 0.5)
+            } else {
+                Capsule()
+                    .strokeBorder(Color(uiColor: .separator).opacity(0.18), lineWidth: 0.5)
             }
         }
-        .shadow(color: .black.opacity(isExpanded ? 0.12 : 0.04), radius: isExpanded ? 18 : 5, y: isExpanded ? 8 : 2)
+        .shadow(color: .black.opacity(isExpanded ? 0.12 : 0.09), radius: isExpanded ? 18 : 8, y: isExpanded ? 8 : 3)
         .padding(.horizontal, 16)
         .padding(.vertical, 9)
         .background(.clear)
