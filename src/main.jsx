@@ -6,9 +6,11 @@ import {
   Check,
   ChevronRight,
   CirclePlus,
+  Columns3,
   Flag,
   Gamepad2,
   Globe2,
+  List,
   LayoutPanelLeft,
   Mail,
   Mic2,
@@ -431,9 +433,75 @@ function TaskGroup({ title, tasks, onToggle, onDelete }) {
   );
 }
 
-function TasksPane({ milestone, tags, onAddTask, onToggle, onDelete, onBack }) {
+function KanbanColumn({ title, stage, tasks, onToggle, onDelete, onMove }) {
+  const [isTargeted, setIsTargeted] = useState(false);
+  return (
+    <section
+      className={`kanban-column ${isTargeted ? "targeted" : ""}`}
+      onDragOver={(event) => {
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "move";
+        setIsTargeted(true);
+      }}
+      onDragLeave={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) setIsTargeted(false);
+      }}
+      onDrop={(event) => {
+        event.preventDefault();
+        setIsTargeted(false);
+        const taskId = event.dataTransfer.getData("text/plain");
+        if (taskId) onMove(taskId, stage);
+      }}
+    >
+      <header>
+        <span>{title}</span>
+        <span>{tasks.length}</span>
+      </header>
+      <div className="kanban-stack">
+        {tasks.map((task) => (
+          <article
+            className={`kanban-card ${task.stage === "done" ? "complete" : ""}`}
+            draggable
+            onDragStart={(event) => {
+              event.dataTransfer.effectAllowed = "move";
+              event.dataTransfer.setData("text/plain", task.id);
+            }}
+            key={task.id}
+          >
+            <button className={`task-check ${task.stage}`} onClick={() => onToggle(task.id)} aria-label={`Complete ${task.title}`}>
+              {task.stage === "done" && <Check size={12} strokeWidth={3} />}
+            </button>
+            <div>
+              <strong>{task.title}</strong>
+              {!!task.tags.length && (
+                <span className="task-tags">
+                  {task.tags.map((tagName) => <em key={tagName}>{tagName}</em>)}
+                </span>
+              )}
+            </div>
+            <button className="task-delete" onClick={() => onDelete(task.id)} aria-label={`Delete ${task.title}`}><X size={14} /></button>
+          </article>
+        ))}
+        {!tasks.length && <div className="kanban-empty">Drop a task here</div>}
+      </div>
+    </section>
+  );
+}
+
+function KanbanBoard({ grouped, onToggle, onDelete, onMove }) {
+  return (
+    <div className="kanban-board">
+      <KanbanColumn title="To Do" stage="todo" tasks={grouped.todo} onToggle={onToggle} onDelete={onDelete} onMove={onMove} />
+      <KanbanColumn title="In Progress" stage="progress" tasks={grouped.progress} onToggle={onToggle} onDelete={onDelete} onMove={onMove} />
+      <KanbanColumn title="Done" stage="done" tasks={grouped.done} onToggle={onToggle} onDelete={onDelete} onMove={onMove} />
+    </div>
+  );
+}
+
+function TasksPane({ milestone, tags, onAddTask, onToggle, onDelete, onMove, onBack }) {
   const [title, setTitle] = useState("");
   const [selectedTag, setSelectedTag] = useState("");
+  const [viewMode, setViewMode] = useState("list");
   const grouped = {
     progress: milestone.tasks.filter((task) => task.stage === "progress"),
     todo: milestone.tasks.filter((task) => task.stage === "todo"),
@@ -452,7 +520,17 @@ function TasksPane({ milestone, tags, onAddTask, onToggle, onDelete, onBack }) {
         <button className="round-back" onClick={onBack}><ArrowLeft size={24} /></button>
       </div>
       <div className="tasks-scroll">
-        <h1>{milestone.title}</h1>
+        <div className="task-heading">
+          <h1>{milestone.title}</h1>
+          <button
+            className="view-toggle"
+            onClick={() => setViewMode((current) => (current === "list" ? "board" : "list"))}
+            aria-label={viewMode === "list" ? "Show Kanban board" : "Show task list"}
+            title={viewMode === "list" ? "Show Kanban board" : "Show task list"}
+          >
+            {viewMode === "list" ? <Columns3 size={19} /> : <List size={20} />}
+          </button>
+        </div>
         <form className="quick-add" onSubmit={submit}>
           <input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Add a new task..." />
           <select aria-label="Task tag" value={selectedTag} onChange={(event) => setSelectedTag(event.target.value)}>
@@ -461,9 +539,15 @@ function TasksPane({ milestone, tags, onAddTask, onToggle, onDelete, onBack }) {
           </select>
           <button type="submit" aria-label="Add task"><CirclePlus size={21} /></button>
         </form>
-        <TaskGroup title="In Progress" tasks={grouped.progress} onToggle={onToggle} onDelete={onDelete} />
-        <TaskGroup title="To Do" tasks={grouped.todo} onToggle={onToggle} onDelete={onDelete} />
-        <TaskGroup title="Done" tasks={grouped.done} onToggle={onToggle} onDelete={onDelete} />
+        {viewMode === "list" ? (
+          <>
+            <TaskGroup title="In Progress" tasks={grouped.progress} onToggle={onToggle} onDelete={onDelete} />
+            <TaskGroup title="To Do" tasks={grouped.todo} onToggle={onToggle} onDelete={onDelete} />
+            <TaskGroup title="Done" tasks={grouped.done} onToggle={onToggle} onDelete={onDelete} />
+          </>
+        ) : (
+          <KanbanBoard grouped={grouped} onToggle={onToggle} onDelete={onDelete} onMove={onMove} />
+        )}
         {!milestone.tasks.length && <div className="empty-state large">Add the first task to this milestone.</div>}
       </div>
       <form className="mobile-task-add" onSubmit={submit}>
@@ -567,6 +651,13 @@ function App() {
     }));
   };
 
+  const moveTask = (taskId, stage) => {
+    updateMilestone(selectedProject.id, selectedMilestone.id, (milestone) => ({
+      ...milestone,
+      tasks: milestone.tasks.map((task) => (task.id === taskId ? { ...task, stage } : task)),
+    }));
+  };
+
   return (
     <div className={`app-shell mobile-${mobileView}`}>
       <ProjectSidebar
@@ -594,6 +685,7 @@ function App() {
           onAddTask={addTask}
           onToggle={toggleTask}
           onDelete={deleteTask}
+          onMove={moveTask}
           onBack={() => setMobileView("milestones")}
         />
       ) : (

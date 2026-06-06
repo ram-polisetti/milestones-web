@@ -378,9 +378,35 @@ button {
   padding: 56px 26px 80px;
 }
 
-.tasks-scroll > h1 {
-  margin: 0 0 18px;
+.task-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.task-heading h1 {
+  margin: 0;
   font-size: 29px;
+}
+
+.view-toggle {
+  display: grid;
+  flex: 0 0 38px;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  background: rgba(255,255,255,.86);
+  box-shadow: 0 3px 12px rgba(0,0,0,.06);
+  cursor: pointer;
+}
+
+.view-toggle:hover {
+  background: #fff;
 }
 
 .quick-add {
@@ -507,6 +533,109 @@ button {
 
 .task-row:hover .task-delete {
   opacity: 1;
+}
+
+.kanban-board {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(190px, 1fr));
+  align-items: start;
+  gap: 12px;
+  margin-top: 22px;
+  overflow-x: auto;
+  padding-bottom: 16px;
+}
+
+.kanban-column {
+  min-width: 0;
+  padding: 8px;
+  border: 2px solid transparent;
+  border-radius: 18px;
+  background: rgba(232,231,237,.62);
+  transition: border-color .15s ease, background .15s ease;
+}
+
+.kanban-column.targeted {
+  border-color: #159ef2;
+  background: rgba(21,158,242,.09);
+}
+
+.kanban-column > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 7px 10px;
+  color: #707075;
+  font-size: 13px;
+}
+
+.kanban-column > header span:last-child {
+  display: grid;
+  min-width: 21px;
+  height: 21px;
+  place-items: center;
+  padding: 0 6px;
+  font-size: 10px;
+  background: #d8d7dd;
+  border-radius: 999px;
+}
+
+.kanban-stack {
+  display: flex;
+  min-height: 90px;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.kanban-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr) 20px;
+  align-items: start;
+  gap: 9px;
+  padding: 13px 10px;
+  border-radius: 13px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,.05);
+  cursor: grab;
+}
+
+.kanban-card:active {
+  cursor: grabbing;
+}
+
+.kanban-card > div {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.kanban-card strong {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.kanban-card.complete strong {
+  color: #888;
+  text-decoration: line-through;
+}
+
+.kanban-card .task-delete {
+  opacity: 0;
+}
+
+.kanban-card:hover .task-delete {
+  opacity: 1;
+}
+
+.kanban-empty {
+  display: grid;
+  min-height: 78px;
+  place-items: center;
+  color: #aaa;
+  font-size: 11px;
+  border: 1px dashed #c9c8ce;
+  border-radius: 12px;
 }
 
 .mobile-task-add {
@@ -918,8 +1047,11 @@ button {
     padding: 0 22px 40px;
   }
 
-  .tasks-scroll > h1 {
+  .task-heading {
     margin-top: 10px;
+  }
+
+  .task-heading h1 {
     font-size: 34px;
   }
 
@@ -950,6 +1082,20 @@ button {
   }
 
   .task-delete {
+    opacity: 1;
+  }
+
+  .kanban-board {
+    grid-template-columns: repeat(3, minmax(78vw, 1fr));
+    margin-right: -22px;
+    scroll-snap-type: x mandatory;
+  }
+
+  .kanban-column {
+    scroll-snap-align: start;
+  }
+
+  .kanban-card .task-delete {
     opacity: 1;
   }
 
