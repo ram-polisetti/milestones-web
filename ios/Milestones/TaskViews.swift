@@ -401,6 +401,7 @@ struct TaskComposer: View {
     let availableTags: [String]
     let submit: () -> Void
     @State private var showOptions = false
+    @State private var composerActivated = false
 
     private var hasDraftDetails: Bool {
         showDescription
@@ -412,24 +413,33 @@ struct TaskComposer: View {
     }
 
     private var isExpanded: Bool {
-        focused.wrappedValue
+        composerActivated
+            || focused.wrappedValue
             || !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             || hasDraftDetails
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 9) {
-                if !isExpanded {
-                    Image(systemName: "plus")
-                        .font(.body.weight(.medium))
-                        .foregroundStyle(.primary)
-                }
+            if composerActivated {
                 TextField("Add a new task…", text: $text, axis: .vertical)
-                    .lineLimit(isExpanded ? 3 : 1)
+                    .lineLimit(3)
                     .focused(focused)
                     .submitLabel(.send)
-                    .onSubmit(submit)
+                    .onSubmit(submitTask)
+            } else {
+                Button(action: activateComposer) {
+                    HStack(spacing: 9) {
+                        Image(systemName: "plus")
+                            .font(.body.weight(.medium))
+                            .foregroundStyle(.primary)
+                        Text("Add a new task…")
+                            .foregroundStyle(.tertiary)
+                        Spacer()
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
             }
 
             if showDescription {
@@ -533,7 +543,7 @@ struct TaskComposer: View {
                     }
                     .accessibilityLabel("Dismiss keyboard")
 
-                    Button(action: submit) {
+                    Button(action: submitTask) {
                         Image(systemName: "arrow.up")
                             .font(.headline.weight(.semibold))
                             .foregroundStyle(.white)
@@ -565,19 +575,29 @@ struct TaskComposer: View {
         .padding(.bottom, isExpanded ? 9 : 0)
         .background(.clear)
         .ignoresSafeArea(.container, edges: .bottom)
-        .onTapGesture { focused.wrappedValue = true }
         .animation(.snappy, value: isExpanded)
-        .task(id: focused.wrappedValue) {
-            if focused.wrappedValue {
-                showOptions = false
-                try? await Task.sleep(for: .milliseconds(450))
-                guard !Task.isCancelled, focused.wrappedValue else { return }
-                withAnimation(.easeInOut(duration: 0.35)) {
-                    showOptions = true
-                }
-            } else if !hasDraftDetails && text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                showOptions = false
-            }
+        .task(id: composerActivated) {
+            guard composerActivated else { return }
+            try? await Task.sleep(for: .milliseconds(400))
+            guard !Task.isCancelled, composerActivated else { return }
+            focused.wrappedValue = true
+        }
+    }
+
+    private func activateComposer() {
+        withAnimation(.easeInOut(duration: 0.32)) {
+            composerActivated = true
+            showOptions = true
+        }
+    }
+
+    private func submitTask() {
+        guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        submit()
+        focused.wrappedValue = false
+        withAnimation(.easeInOut(duration: 0.25)) {
+            showOptions = false
+            composerActivated = false
         }
     }
 }
