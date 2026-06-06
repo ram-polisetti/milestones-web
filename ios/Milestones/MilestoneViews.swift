@@ -33,7 +33,8 @@ struct MilestoneListView: View {
                     }
 
                     Section("Milestones") {
-                        ForEach(project.milestones.filter { !$0.isArchived }) { milestone in
+                        let visibleMilestones = project.milestones.filter { !$0.isArchived }
+                        ForEach(visibleMilestones) { milestone in
                             MilestoneRow(milestone: milestone)
                                 .tag(milestone.id)
                                 .swipeActions(edge: .leading, allowsFullSwipe: false) {
@@ -65,6 +66,17 @@ struct MilestoneListView: View {
                                         if selection == milestone.id { selection = nil }
                                     }
                                 }
+                        }
+                        if visibleMilestones.isEmpty {
+                            ContentUnavailableView {
+                                Label("No Milestones", systemImage: "flag")
+                            } description: {
+                                Text("Create a milestone to break this project into clear stages.")
+                            } actions: {
+                                Button("New Milestone") { showForm = true }
+                                    .buttonStyle(.borderedProminent)
+                            }
+                            .listRowBackground(Color.clear)
                         }
                     }
                 }
@@ -225,6 +237,14 @@ struct BacklogView: View {
                             }
                         }
                     }
+                }
+                if project.backlog.isEmpty {
+                    ContentUnavailableView {
+                        Label("Backlog Is Empty", systemImage: "tray")
+                    } description: {
+                        Text("Unscheduled tasks for this project will appear here.")
+                    }
+                    .listRowBackground(Color.clear)
                 }
             }
         }

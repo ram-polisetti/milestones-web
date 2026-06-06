@@ -63,22 +63,15 @@ final class MilestonesStore: ObservableObject {
     }
 
     func addMilestone(projectID: UUID, title: String, status: String) -> UUID {
-        let milestone = Milestone(
+        var milestone = Milestone(
             title: title,
             status: status,
             statusColor: Self.color(for: status),
             isActive: false
         )
         mutateProject(id: projectID) { project in
-            if project.milestones.isEmpty { project.milestones.append(Milestone(
-                id: milestone.id,
-                title: milestone.title,
-                status: milestone.status,
-                statusColor: milestone.statusColor,
-                isActive: true
-            )) } else {
-                project.milestones.append(milestone)
-            }
+            milestone.isActive = project.milestones.allSatisfy(\.isArchived)
+            project.milestones.append(milestone)
         }
         return milestone.id
     }
@@ -86,12 +79,14 @@ final class MilestonesStore: ObservableObject {
     func updateMilestone(projectID: UUID, milestone: Milestone) {
         mutateProject(id: projectID) { project in
             guard let index = project.milestones.firstIndex(where: { $0.id == milestone.id }) else { return }
+            var updated = milestone
+            updated.statusColor = Self.color(for: milestone.status)
             if milestone.isActive {
                 for itemIndex in project.milestones.indices {
                     project.milestones[itemIndex].isActive = false
                 }
             }
-            project.milestones[index] = milestone
+            project.milestones[index] = updated
         }
     }
 
@@ -239,7 +234,7 @@ final class MilestonesStore: ObservableObject {
         try? encoded.write(to: fileURL, options: .atomic)
     }
 
-    private static func color(for status: String) -> String {
+    static func color(for status: String) -> String {
         switch status {
         case "Released": "#30C968"
         case "In Review": "#E4C342"

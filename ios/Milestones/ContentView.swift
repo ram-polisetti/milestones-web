@@ -144,11 +144,13 @@ struct ProjectSidebar: View {
                 } label: {
                     Image(systemName: "plus")
                 }
+                .accessibilityLabel("New project")
                 Button {
                     showSettings = true
                 } label: {
                     Image(systemName: "gearshape.fill")
                 }
+                .accessibilityLabel("Settings")
             }
         }
         .safeAreaInset(edge: .bottom) {

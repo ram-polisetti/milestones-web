@@ -1,6 +1,6 @@
 import SwiftUI
 
-enum TaskViewMode {
+enum TaskViewMode: String {
     case list
     case kanban
 }
@@ -9,7 +9,7 @@ struct TaskBoardView: View {
     @EnvironmentObject private var store: MilestonesStore
     let projectID: UUID
     let milestoneID: UUID
-    @State private var viewMode: TaskViewMode = .list
+    @AppStorage("taskViewMode") private var storedViewMode = TaskViewMode.list.rawValue
     @State private var quickTitle = ""
     @State private var quickNotes = ""
     @State private var quickTags: Set<String> = []
@@ -25,6 +25,11 @@ struct TaskBoardView: View {
 
     private var milestone: Milestone? {
         store.milestone(projectID: projectID, milestoneID: milestoneID)
+    }
+
+    private var viewMode: TaskViewMode {
+        get { TaskViewMode(rawValue: storedViewMode) ?? .list }
+        nonmutating set { storedViewMode = newValue.rawValue }
     }
 
     var body: some View {
@@ -72,6 +77,7 @@ struct TaskBoardView: View {
                         } label: {
                             Image(systemName: viewMode == .list ? "rectangle.split.3x1" : "list.bullet")
                         }
+                        .accessibilityLabel(viewMode == .list ? "Show Kanban board" : "Show task list")
                         Button {
                             showComposerHelp = true
                         } label: {
@@ -175,8 +181,17 @@ struct TaskList: View {
                     }
                 }
             }
+            if milestone.tasks.isEmpty {
+                ContentUnavailableView {
+                    Label("No Tasks Yet", systemImage: "checklist")
+                } description: {
+                    Text("Use the task composer below to add the first task.")
+                }
+                .listRowBackground(Color.clear)
+            }
         }
         .listStyle(.insetGrouped)
+        .scrollDismissesKeyboard(.interactively)
     }
 }
 
@@ -197,7 +212,8 @@ struct TaskListRow: View {
                     .strikethrough(task.stage == .done)
                     .foregroundStyle(task.stage == .done ? .secondary : .primary)
 
-                HStack(spacing: 5) {
+                ScrollView(.horizontal) {
+                    HStack(spacing: 5) {
                     if let dueDate = task.dueDate {
                         MetadataPill(
                             text: dueDate.formatted(date: .abbreviated, time: .omitted),
@@ -218,10 +234,13 @@ struct TaskListRow: View {
                     ForEach(task.tags, id: \.self) { tag in
                         MetadataPill(text: tag, systemImage: "sparkles", color: .blue)
                     }
+                    }
                 }
+                .scrollIndicators(.hidden)
             }
         }
         .padding(.vertical, 3)
+        .accessibilityElement(children: .combine)
     }
 }
 
@@ -340,6 +359,13 @@ struct KanbanCard: View {
                 }
             }
             HStack(spacing: 5) {
+                if let dueDate = task.dueDate {
+                    MetadataPill(
+                        text: dueDate.formatted(date: .abbreviated, time: .omitted),
+                        systemImage: "calendar",
+                        color: dueDate < .now && task.stage != .done ? .red : .secondary
+                    )
+                }
                 if task.priority != .none {
                     MetadataPill(text: task.priority.rawValue, systemImage: task.priority.symbol, color: task.priority.color)
                 }
@@ -354,6 +380,7 @@ struct KanbanCard: View {
         .padding(12)
         .background(.background, in: RoundedRectangle(cornerRadius: 13))
         .shadow(color: .black.opacity(0.05), radius: 5, y: 2)
+        .accessibilityElement(children: .combine)
     }
 }
 
@@ -420,18 +447,21 @@ struct TaskComposer: View {
                 } label: {
                     ComposerButton(systemImage: "number", active: !selectedTags.isEmpty)
                 }
+                .accessibilityLabel("Tags")
 
                 Button {
                     showDueDatePicker = true
                 } label: {
                     ComposerButton(systemImage: "calendar", active: dueDate != nil)
                 }
+                .accessibilityLabel("Due date")
 
                 Button {
                     withAnimation(.snappy) { showDescription.toggle() }
                 } label: {
                     ComposerButton(systemImage: "text.alignleft", active: showDescription || !notes.isEmpty)
                 }
+                .accessibilityLabel("Description")
 
                 Menu {
                     Button("No recurrence") { recurrence = nil }
@@ -445,6 +475,7 @@ struct TaskComposer: View {
                 } label: {
                     ComposerButton(systemImage: recurrence == nil ? "lock.fill" : "repeat", active: recurrence != nil)
                 }
+                .accessibilityLabel("Recurrence")
 
                 Menu {
                     Section("Status") {
@@ -468,6 +499,7 @@ struct TaskComposer: View {
                 } label: {
                     ComposerButton(systemImage: "flag", active: priority != .none || stage != .todo)
                 }
+                .accessibilityLabel("Status and priority")
 
                 Spacer()
 
@@ -477,6 +509,7 @@ struct TaskComposer: View {
                     } label: {
                         ComposerButton(systemImage: "keyboard.chevron.compact.down", active: false)
                     }
+                    .accessibilityLabel("Dismiss keyboard")
                 }
 
                 if isExpanded {
@@ -489,6 +522,7 @@ struct TaskComposer: View {
                     }
                     .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                     .opacity(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? 0.45 : 1)
+                    .accessibilityLabel("Add task")
                 }
             }
         }

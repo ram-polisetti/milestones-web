@@ -309,6 +309,14 @@ struct SmartListView: View {
                         }
                     }
                 }
+                if store.data.inbox.isEmpty {
+                    ContentUnavailableView {
+                        Label("Inbox Is Empty", systemImage: "tray")
+                    } description: {
+                        Text("Capture an idea below and organize it later.")
+                    }
+                    .listRowBackground(Color.clear)
+                }
             } else {
                 ForEach(locatedTasks) { located in
                     Section("\(located.projectTitle) · \(located.milestoneTitle)") {
@@ -348,8 +356,20 @@ struct SmartListView: View {
                         }
                     }
                 }
+                if locatedTasks.isEmpty {
+                    ContentUnavailableView {
+                        Label(
+                            kind == .today ? "Nothing Due Today" : "Nothing Upcoming",
+                            systemImage: kind == .today ? "checkmark.circle" : "calendar"
+                        )
+                    } description: {
+                        Text(kind == .today ? "You are all caught up." : "Tasks with future due dates will appear here.")
+                    }
+                    .listRowBackground(Color.clear)
+                }
             }
         }
+        .scrollDismissesKeyboard(.interactively)
         .navigationTitle(kind.title)
         .safeAreaInset(edge: .bottom) {
             if kind == .inbox {
