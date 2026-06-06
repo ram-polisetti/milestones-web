@@ -137,21 +137,10 @@ struct ProjectSidebar: View {
                     }
                 }
             }
-            .contentMargins(.bottom, 154, for: .scrollContent)
+            .contentMargins(.bottom, 88, for: .scrollContent)
             .scrollDismissesKeyboard(.interactively)
 
-            VStack(spacing: 12) {
-                Button {
-                    showProjectForm = true
-                } label: {
-                    Label("New Project", systemImage: "plus")
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 13)
-                }
-                .buttonStyle(.borderedProminent)
-                .buttonBorderShape(.capsule)
-                .shadow(color: .black.opacity(0.12), radius: 14, y: 7)
-
+            HStack(spacing: 12) {
                 HStack(spacing: 10) {
                     Image(systemName: "magnifyingglass")
                         .font(.body.weight(.medium))
@@ -172,6 +161,19 @@ struct ProjectSidebar: View {
                 .padding(.vertical, 14)
                 .background(Color(uiColor: .systemBackground), in: Capsule())
                 .shadow(color: .black.opacity(0.13), radius: 20, y: 9)
+
+                Button {
+                    showProjectForm = true
+                } label: {
+                    Image(systemName: "plus")
+                        .font(.title3.weight(.semibold))
+                        .foregroundStyle(.white)
+                        .frame(width: 52, height: 52)
+                        .background(Color.accentColor, in: Circle())
+                }
+                .buttonStyle(.plain)
+                .shadow(color: .black.opacity(0.15), radius: 14, y: 7)
+                .accessibilityLabel("New Project")
             }
             .padding(.horizontal, 16)
             .padding(.bottom, 8)
