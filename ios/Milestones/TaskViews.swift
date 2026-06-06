@@ -161,7 +161,11 @@ struct TaskList: View {
                                     onDelete(task)
                                 }
                             }
-                            .swipeActions(edge: .leading) {
+                            .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                                Button("Edit", systemImage: "pencil") {
+                                    onEdit(task)
+                                }
+                                .tint(.blue)
                                 Button(task.stage == .done ? "Reopen" : "Done", systemImage: "checkmark") {
                                     onToggle(task)
                                 }

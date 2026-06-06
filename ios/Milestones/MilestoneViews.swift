@@ -6,6 +6,7 @@ struct MilestoneListView: View {
     @Binding var selection: UUID?
     @State private var showForm = false
     @State private var showProjectEditor = false
+    @State private var editingMilestone: Milestone?
 
     private var project: Project? { store.project(id: projectID) }
 
@@ -35,7 +36,27 @@ struct MilestoneListView: View {
                         ForEach(project.milestones.filter { !$0.isArchived }) { milestone in
                             MilestoneRow(milestone: milestone)
                                 .tag(milestone.id)
+                                .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                                    Button("Edit", systemImage: "pencil") {
+                                        editingMilestone = milestone
+                                    }
+                                    .tint(.blue)
+                                }
+                                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                    Button("Archive", systemImage: "archivebox") {
+                                        store.archiveMilestone(projectID: projectID, milestoneID: milestone.id)
+                                        if selection == milestone.id { selection = nil }
+                                    }
+                                    .tint(.orange)
+                                    Button("Delete", systemImage: "trash", role: .destructive) {
+                                        store.deleteMilestone(projectID: projectID, milestoneID: milestone.id)
+                                        if selection == milestone.id { selection = nil }
+                                    }
+                                }
                                 .contextMenu {
+                                    Button("Edit", systemImage: "pencil") {
+                                        editingMilestone = milestone
+                                    }
                                     Button("Archive", systemImage: "archivebox") {
                                         store.archiveMilestone(projectID: projectID, milestoneID: milestone.id)
                                     }
@@ -77,6 +98,9 @@ struct MilestoneListView: View {
                 }
                 .sheet(isPresented: $showProjectEditor) {
                     ProjectEditor(project: project)
+                }
+                .sheet(item: $editingMilestone) { milestone in
+                    MilestoneEditor(projectID: projectID, milestone: milestone)
                 }
             }
         }
@@ -160,17 +184,55 @@ struct ProjectEditor: View {
 struct BacklogView: View {
     @EnvironmentObject private var store: MilestonesStore
     let projectID: UUID
+    @State private var editingTask: MilestoneTask?
 
     var body: some View {
         List {
             if let project = store.project(id: projectID) {
-                Section("To Do") {
-                    ForEach(project.backlog) { task in
-                        TaskListRow(task: task) {}
+                ForEach(TaskStage.allCases) { stage in
+                    let tasks = project.backlog.filter { $0.stage == stage }
+                    if !tasks.isEmpty {
+                        Section(stage.rawValue) {
+                            ForEach(tasks) { task in
+                                TaskListRow(task: task) {
+                                    store.moveBacklogTask(
+                                        projectID: projectID,
+                                        taskID: task.id,
+                                        to: task.stage == .done ? .todo : .done
+                                    )
+                                }
+                                .contentShape(Rectangle())
+                                .onTapGesture { editingTask = task }
+                                .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                                    Button("Edit", systemImage: "pencil") {
+                                        editingTask = task
+                                    }
+                                    .tint(.blue)
+                                    Button(task.stage == .done ? "Reopen" : "Done", systemImage: "checkmark") {
+                                        store.moveBacklogTask(
+                                            projectID: projectID,
+                                            taskID: task.id,
+                                            to: task.stage == .done ? .todo : .done
+                                        )
+                                    }
+                                    .tint(task.stage == .done ? .gray : .green)
+                                }
+                                .swipeActions(edge: .trailing) {
+                                    Button("Delete", systemImage: "trash", role: .destructive) {
+                                        store.deleteBacklogTask(projectID: projectID, taskID: task.id)
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
         }
         .navigationTitle("Backlog")
+        .sheet(item: $editingTask) { task in
+            TaskEditor(task: task) {
+                store.updateBacklogTask(projectID: projectID, task: $0)
+            }
+        }
     }
 }

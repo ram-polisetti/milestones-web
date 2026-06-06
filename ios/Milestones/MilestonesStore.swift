@@ -151,6 +151,26 @@ final class MilestonesStore: ObservableObject {
         }
     }
 
+    func updateBacklogTask(projectID: UUID, task: MilestoneTask) {
+        mutateProject(id: projectID) { project in
+            guard let index = project.backlog.firstIndex(where: { $0.id == task.id }) else { return }
+            project.backlog[index] = task
+        }
+    }
+
+    func moveBacklogTask(projectID: UUID, taskID: UUID, to stage: TaskStage) {
+        mutateProject(id: projectID) { project in
+            guard let index = project.backlog.firstIndex(where: { $0.id == taskID }) else { return }
+            project.backlog[index].stage = stage
+        }
+    }
+
+    func deleteBacklogTask(projectID: UUID, taskID: UUID) {
+        mutateProject(id: projectID) { project in
+            project.backlog.removeAll { $0.id == taskID }
+        }
+    }
+
     func addInboxTask(title: String) {
         let parsed = Self.parseQuickTask(title)
         data.inbox.insert(MilestoneTask(
@@ -165,6 +185,11 @@ final class MilestonesStore: ObservableObject {
     func updateInboxTask(_ task: MilestoneTask) {
         guard let index = data.inbox.firstIndex(where: { $0.id == task.id }) else { return }
         data.inbox[index] = task
+        save()
+    }
+
+    func deleteInboxTask(id: UUID) {
+        data.inbox.removeAll { $0.id == id }
         save()
     }
 

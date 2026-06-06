@@ -103,6 +103,42 @@ struct MilestoneForm: View {
     }
 }
 
+struct MilestoneEditor: View {
+    @EnvironmentObject private var store: MilestonesStore
+    @Environment(\.dismiss) private var dismiss
+    let projectID: UUID
+    @State var milestone: Milestone
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Milestone") {
+                    TextField("Name", text: $milestone.title)
+                    Picker("Status", selection: $milestone.status) {
+                        ForEach(["Draft", "Planning", "In Progress", "In Review", "Released"], id: \.self) {
+                            Text($0)
+                        }
+                    }
+                    Toggle("Active Milestone", isOn: $milestone.isActive)
+                }
+            }
+            .navigationTitle("Edit Milestone")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") {
+                        store.updateMilestone(projectID: projectID, milestone: milestone)
+                        dismiss()
+                    }
+                    .disabled(milestone.title.trimmingCharacters(in: .whitespaces).isEmpty)
+                }
+            }
+        }
+    }
+}
+
 struct TaskEditor: View {
     @EnvironmentObject private var store: MilestonesStore
     @Environment(\.dismiss) private var dismiss
@@ -212,6 +248,7 @@ struct SmartListView: View {
     let kind: SmartListKind
     @State private var quickTitle = ""
     @State private var editingInboxTask: MilestoneTask?
+    @State private var editingLocatedTask: LocatedTask?
 
     private var locatedTasks: [LocatedTask] {
         let calendar = Calendar.current
@@ -253,6 +290,23 @@ struct SmartListView: View {
                         }
                         .contentShape(Rectangle())
                         .onTapGesture { editingInboxTask = task }
+                        .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                            Button("Edit", systemImage: "pencil") {
+                                editingInboxTask = task
+                            }
+                            .tint(.blue)
+                            Button(task.stage == .done ? "Reopen" : "Done", systemImage: "checkmark") {
+                                var updated = task
+                                updated.stage = task.stage == .done ? .todo : .done
+                                store.updateInboxTask(updated)
+                            }
+                            .tint(task.stage == .done ? .gray : .green)
+                        }
+                        .swipeActions(edge: .trailing) {
+                            Button("Delete", systemImage: "trash", role: .destructive) {
+                                store.deleteInboxTask(id: task.id)
+                            }
+                        }
                     }
                 }
             } else {
@@ -265,6 +319,32 @@ struct SmartListView: View {
                                 taskID: located.task.id,
                                 to: located.task.stage == .done ? .todo : .done
                             )
+                        }
+                        .contentShape(Rectangle())
+                        .onTapGesture { editingLocatedTask = located }
+                        .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                            Button("Edit", systemImage: "pencil") {
+                                editingLocatedTask = located
+                            }
+                            .tint(.blue)
+                            Button(located.task.stage == .done ? "Reopen" : "Done", systemImage: "checkmark") {
+                                store.moveTask(
+                                    projectID: located.projectID,
+                                    milestoneID: located.milestoneID,
+                                    taskID: located.task.id,
+                                    to: located.task.stage == .done ? .todo : .done
+                                )
+                            }
+                            .tint(located.task.stage == .done ? .gray : .green)
+                        }
+                        .swipeActions(edge: .trailing) {
+                            Button("Delete", systemImage: "trash", role: .destructive) {
+                                store.deleteTask(
+                                    projectID: located.projectID,
+                                    milestoneID: located.milestoneID,
+                                    taskID: located.task.id
+                                )
+                            }
                         }
                     }
                 }
@@ -288,6 +368,15 @@ struct SmartListView: View {
         }
         .sheet(item: $editingInboxTask) { task in
             TaskEditor(task: task) { store.updateInboxTask($0) }
+        }
+        .sheet(item: $editingLocatedTask) { located in
+            TaskEditor(task: located.task) {
+                store.updateTask(
+                    projectID: located.projectID,
+                    milestoneID: located.milestoneID,
+                    task: $0
+                )
+            }
         }
     }
 
