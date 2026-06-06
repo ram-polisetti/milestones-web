@@ -13,72 +13,89 @@ struct MilestoneListView: View {
     var body: some View {
         Group {
             if let project {
-                List(selection: $selection) {
-                    Section {
-                        NavigationLink {
-                            BacklogView(projectID: projectID)
-                        } label: {
-                            HStack {
-                                Label("Backlog", systemImage: "list.bullet.rectangle")
-                                Spacer()
-                                Text(project.backlog.count, format: .number)
-                                    .foregroundStyle(.secondary)
+                ZStack(alignment: .bottom) {
+                    List(selection: $selection) {
+                        Section {
+                            NavigationLink {
+                                BacklogView(projectID: projectID)
+                            } label: {
+                                HStack {
+                                    Label("Backlog", systemImage: "list.bullet.rectangle")
+                                    Spacer()
+                                    Text(project.backlog.count, format: .number)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                            Button {
+                                showProjectEditor = true
+                            } label: {
+                                Label("Project Settings", systemImage: "gearshape")
                             }
                         }
-                        Button {
-                            showProjectEditor = true
-                        } label: {
-                            Label("Project Settings", systemImage: "gearshape")
-                        }
-                    }
 
-                    Section("Milestones") {
-                        let visibleMilestones = project.milestones.filter { !$0.isArchived }
-                        ForEach(visibleMilestones) { milestone in
-                            MilestoneRow(milestone: milestone)
-                                .tag(milestone.id)
-                                .swipeActions(edge: .leading, allowsFullSwipe: false) {
-                                    Button("Edit", systemImage: "pencil") {
-                                        editingMilestone = milestone
+                        Section("Milestones") {
+                            let visibleMilestones = project.milestones.filter { !$0.isArchived }
+                            ForEach(visibleMilestones) { milestone in
+                                MilestoneRow(milestone: milestone)
+                                    .tag(milestone.id)
+                                    .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                                        Button("Edit", systemImage: "pencil") {
+                                            editingMilestone = milestone
+                                        }
+                                        .tint(.blue)
                                     }
-                                    .tint(.blue)
-                                }
-                                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                                    Button("Archive", systemImage: "archivebox") {
-                                        store.archiveMilestone(projectID: projectID, milestoneID: milestone.id)
-                                        if selection == milestone.id { selection = nil }
+                                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                        Button("Archive", systemImage: "archivebox") {
+                                            store.archiveMilestone(projectID: projectID, milestoneID: milestone.id)
+                                            if selection == milestone.id { selection = nil }
+                                        }
+                                        .tint(.orange)
+                                        Button("Delete", systemImage: "trash", role: .destructive) {
+                                            store.deleteMilestone(projectID: projectID, milestoneID: milestone.id)
+                                            if selection == milestone.id { selection = nil }
+                                        }
                                     }
-                                    .tint(.orange)
-                                    Button("Delete", systemImage: "trash", role: .destructive) {
-                                        store.deleteMilestone(projectID: projectID, milestoneID: milestone.id)
-                                        if selection == milestone.id { selection = nil }
+                                    .contextMenu {
+                                        Button("Edit", systemImage: "pencil") {
+                                            editingMilestone = milestone
+                                        }
+                                        Button("Archive", systemImage: "archivebox") {
+                                            store.archiveMilestone(projectID: projectID, milestoneID: milestone.id)
+                                        }
+                                        Button("Delete", systemImage: "trash", role: .destructive) {
+                                            store.deleteMilestone(projectID: projectID, milestoneID: milestone.id)
+                                            if selection == milestone.id { selection = nil }
+                                        }
                                     }
-                                }
-                                .contextMenu {
-                                    Button("Edit", systemImage: "pencil") {
-                                        editingMilestone = milestone
-                                    }
-                                    Button("Archive", systemImage: "archivebox") {
-                                        store.archiveMilestone(projectID: projectID, milestoneID: milestone.id)
-                                    }
-                                    Button("Delete", systemImage: "trash", role: .destructive) {
-                                        store.deleteMilestone(projectID: projectID, milestoneID: milestone.id)
-                                        if selection == milestone.id { selection = nil }
-                                    }
-                                }
-                        }
-                        if visibleMilestones.isEmpty {
-                            ContentUnavailableView {
-                                Label("No Milestones", systemImage: "flag")
-                            } description: {
-                                Text("Create a milestone to break this project into clear stages.")
-                            } actions: {
-                                Button("New Milestone") { showForm = true }
-                                    .buttonStyle(.borderedProminent)
                             }
-                            .listRowBackground(Color.clear)
+                            if visibleMilestones.isEmpty {
+                                ContentUnavailableView {
+                                    Label("No Milestones", systemImage: "flag")
+                                } description: {
+                                    Text("Create a milestone to break this project into clear stages.")
+                                } actions: {
+                                    Button("New Milestone") { showForm = true }
+                                        .buttonStyle(.borderedProminent)
+                                }
+                                .listRowBackground(Color.clear)
+                            }
                         }
                     }
+                    .contentMargins(.bottom, 88, for: .scrollContent)
+
+                    Button {
+                        showForm = true
+                    } label: {
+                        Label("New Milestone", systemImage: "plus")
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 13)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .buttonBorderShape(.capsule)
+                    .shadow(color: .black.opacity(0.12), radius: 14, y: 7)
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 8)
+                    .zIndex(1)
                 }
                 .navigationTitle(project.title)
                 .toolbar {
@@ -89,19 +106,6 @@ struct MilestoneListView: View {
                             Image(systemName: "plus")
                         }
                     }
-                }
-                .safeAreaInset(edge: .bottom) {
-                    Button {
-                        showForm = true
-                    } label: {
-                        Label("New Milestone", systemImage: "plus")
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 11)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .clipShape(Capsule())
-                    .padding()
-                    .background(.bar)
                 }
                 .sheet(isPresented: $showForm) {
                     MilestoneForm { title, status in
