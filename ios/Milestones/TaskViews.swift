@@ -218,9 +218,9 @@ struct TaskListRow: View {
                     HStack(spacing: 5) {
                     if let dueDate = task.dueDate {
                         MetadataPill(
-                            text: dueDate.formatted(date: .abbreviated, time: .omitted),
+                            text: dueDate.dueDateLabel,
                             systemImage: "calendar",
-                            color: dueDate < .now && task.stage != .done ? .red : .secondary
+                            color: dueDate.isOverdue && task.stage != .done ? .red : .secondary
                         )
                     }
                     if task.priority != .none {
@@ -364,9 +364,9 @@ struct KanbanCard: View {
             HStack(spacing: 5) {
                 if let dueDate = task.dueDate {
                     MetadataPill(
-                        text: dueDate.formatted(date: .abbreviated, time: .omitted),
+                        text: dueDate.dueDateLabel,
                         systemImage: "calendar",
-                        color: dueDate < .now && task.stage != .done ? .red : .secondary
+                        color: dueDate.isOverdue && task.stage != .done ? .red : .secondary
                     )
                 }
                 if task.priority != .none {
@@ -626,7 +626,7 @@ struct ComposerMetadata: View {
         ScrollView(.horizontal) {
             HStack(spacing: 6) {
                 if let dueDate {
-                    MetadataPill(text: dueDate.formatted(date: .abbreviated, time: .omitted), systemImage: "calendar", color: .blue)
+                    MetadataPill(text: dueDate.dueDateLabel, systemImage: "calendar", color: .blue)
                 }
                 if priority != .none {
                     MetadataPill(text: priority.rawValue, systemImage: priority.symbol, color: priority.color)
@@ -649,18 +649,39 @@ struct ComposerMetadata: View {
 struct DueDatePickerSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Binding var date: Date?
+    @State private var selectedDay: Date
+    @State private var selectedTime: Date
+    @State private var isAllDay: Bool
+
+    init(date: Binding<Date?>) {
+        _date = date
+        let initialDate = date.wrappedValue ?? Calendar.current.startOfDay(for: .now)
+        _selectedDay = State(initialValue: initialDate)
+        _selectedTime = State(initialValue: initialDate.hasDueTime ? initialDate : .now)
+        _isAllDay = State(initialValue: !initialDate.hasDueTime)
+    }
 
     var body: some View {
         NavigationStack {
             Form {
                 DatePicker(
-                    "Due date",
-                    selection: Binding(
-                        get: { date ?? .now },
-                        set: { date = $0 }
-                    ),
+                    "Date",
+                    selection: $selectedDay,
                     displayedComponents: .date
                 )
+                .datePickerStyle(.graphical)
+
+                Section {
+                    Toggle("All Day", isOn: $isAllDay)
+                    if !isAllDay {
+                        DatePicker(
+                            "Time",
+                            selection: $selectedTime,
+                            displayedComponents: .hourAndMinute
+                        )
+                    }
+                }
+
                 if date != nil {
                     Button("Remove Due Date", role: .destructive) {
                         date = nil
@@ -675,12 +696,21 @@ struct DueDatePickerSheet: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") {
-                        if date == nil { date = .now }
+                        if isAllDay {
+                            date = Calendar.current.startOfDay(for: selectedDay)
+                        } else {
+                            date = Calendar.current.date(
+                                bySettingHour: Calendar.current.component(.hour, from: selectedTime),
+                                minute: Calendar.current.component(.minute, from: selectedTime),
+                                second: 0,
+                                of: selectedDay
+                            )
+                        }
                         dismiss()
                     }
                 }
             }
         }
-        .presentationDetents([.medium])
+        .presentationDetents([.medium, .large])
     }
 }

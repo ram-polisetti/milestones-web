@@ -137,3 +137,23 @@ extension Color {
         )
     }
 }
+
+extension Date {
+    var hasDueTime: Bool {
+        let components = Calendar.current.dateComponents([.hour, .minute, .second], from: self)
+        return components.hour != 0 || components.minute != 0 || components.second != 0
+    }
+
+    var dueDateLabel: String {
+        let day = formatted(date: .abbreviated, time: .omitted)
+        guard hasDueTime else { return "\(day) · All Day" }
+        return "\(day) · \(formatted(date: .omitted, time: .shortened))"
+    }
+
+    var isOverdue: Bool {
+        if hasDueTime {
+            return self < .now
+        }
+        return self < Calendar.current.startOfDay(for: .now)
+    }
+}
