@@ -44,6 +44,15 @@ enum TaskPriority: String, Codable, CaseIterable, Identifiable {
     }
 }
 
+enum TaskRecurrence: String, Codable, CaseIterable, Identifiable {
+    case daily = "Daily"
+    case weekly = "Weekly"
+    case monthly = "Monthly"
+    case yearly = "Yearly"
+
+    var id: String { rawValue }
+}
+
 struct MilestoneTask: Identifiable, Codable, Hashable {
     var id = UUID()
     var title: String
@@ -52,6 +61,7 @@ struct MilestoneTask: Identifiable, Codable, Hashable {
     var priority: TaskPriority = .none
     var dueDate: Date?
     var tags: [String] = []
+    var recurrence: TaskRecurrence?
     var createdAt = Date()
 }
 

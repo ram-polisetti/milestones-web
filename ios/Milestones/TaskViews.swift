@@ -11,6 +11,15 @@ struct TaskBoardView: View {
     let milestoneID: UUID
     @State private var viewMode: TaskViewMode = .list
     @State private var quickTitle = ""
+    @State private var quickNotes = ""
+    @State private var quickTags: Set<String> = []
+    @State private var quickPriority: TaskPriority = .none
+    @State private var quickStage: TaskStage = .todo
+    @State private var quickDueDate: Date?
+    @State private var quickRecurrence: TaskRecurrence?
+    @State private var showDueDatePicker = false
+    @State private var showDescription = false
+    @State private var showComposerHelp = false
     @State private var editingTask: MilestoneTask?
     @FocusState private var quickEntryFocused: Bool
 
@@ -38,7 +47,20 @@ struct TaskBoardView: View {
                             onDelete: delete
                         )
                     }
-                    QuickTaskBar(text: $quickTitle, focused: $quickEntryFocused, submit: addQuickTask)
+                    TaskComposer(
+                        text: $quickTitle,
+                        notes: $quickNotes,
+                        selectedTags: $quickTags,
+                        priority: $quickPriority,
+                        stage: $quickStage,
+                        dueDate: $quickDueDate,
+                        recurrence: $quickRecurrence,
+                        showDescription: $showDescription,
+                        showDueDatePicker: $showDueDatePicker,
+                        focused: $quickEntryFocused,
+                        availableTags: store.tags,
+                        submit: addQuickTask
+                    )
                 }
                 .navigationTitle(milestone.title)
                 .toolbar {
@@ -51,9 +73,9 @@ struct TaskBoardView: View {
                             Image(systemName: viewMode == .list ? "rectangle.split.3x1" : "list.bullet")
                         }
                         Button {
-                            quickEntryFocused = true
+                            showComposerHelp = true
                         } label: {
-                            Image(systemName: "plus.circle")
+                            Image(systemName: "questionmark.circle")
                         }
                     }
                 }
@@ -62,6 +84,14 @@ struct TaskBoardView: View {
                         store.updateTask(projectID: projectID, milestoneID: milestoneID, task: updated)
                     }
                 }
+                .sheet(isPresented: $showDueDatePicker) {
+                    DueDatePickerSheet(date: $quickDueDate)
+                }
+                .alert("Quick task controls", isPresented: $showComposerHelp) {
+                    Button("OK", role: .cancel) {}
+                } message: {
+                    Text("Add tags, a due date, description, recurrence, status, and priority before sending the task.")
+                }
             }
         }
     }
@@ -69,8 +99,25 @@ struct TaskBoardView: View {
     private func addQuickTask() {
         let trimmed = quickTitle.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
-        store.addTask(projectID: projectID, milestoneID: milestoneID, title: trimmed)
+        store.addTask(
+            projectID: projectID,
+            milestoneID: milestoneID,
+            title: trimmed,
+            notes: quickNotes.trimmingCharacters(in: .whitespacesAndNewlines),
+            stage: quickStage,
+            tags: Array(quickTags),
+            priority: quickPriority,
+            dueDate: quickDueDate,
+            recurrence: quickRecurrence
+        )
         quickTitle = ""
+        quickNotes = ""
+        quickTags = []
+        quickPriority = .none
+        quickStage = .todo
+        quickDueDate = nil
+        quickRecurrence = nil
+        showDescription = false
     }
 
     private func toggle(_ task: MilestoneTask) {
@@ -160,6 +207,9 @@ struct TaskListRow: View {
                             systemImage: task.priority.symbol,
                             color: task.priority.color
                         )
+                    }
+                    if let recurrence = task.recurrence {
+                        MetadataPill(text: recurrence.rawValue, systemImage: "repeat", color: .purple)
                     }
                     ForEach(task.tags, id: \.self) { tag in
                         MetadataPill(text: tag, systemImage: "sparkles", color: .blue)
@@ -289,6 +339,9 @@ struct KanbanCard: View {
                 if task.priority != .none {
                     MetadataPill(text: task.priority.rawValue, systemImage: task.priority.symbol, color: task.priority.color)
                 }
+                if let recurrence = task.recurrence {
+                    MetadataPill(text: recurrence.rawValue, systemImage: "repeat", color: .purple)
+                }
                 ForEach(task.tags, id: \.self) { tag in
                     MetadataPill(text: tag, systemImage: "sparkles", color: .blue)
                 }
@@ -300,24 +353,234 @@ struct KanbanCard: View {
     }
 }
 
-struct QuickTaskBar: View {
+struct TaskComposer: View {
     @Binding var text: String
+    @Binding var notes: String
+    @Binding var selectedTags: Set<String>
+    @Binding var priority: TaskPriority
+    @Binding var stage: TaskStage
+    @Binding var dueDate: Date?
+    @Binding var recurrence: TaskRecurrence?
+    @Binding var showDescription: Bool
+    @Binding var showDueDatePicker: Bool
     var focused: FocusState<Bool>.Binding
+    let availableTags: [String]
     let submit: () -> Void
 
+    private var isExpanded: Bool {
+        focused.wrappedValue || showDescription || !selectedTags.isEmpty || priority != .none || dueDate != nil || recurrence != nil || stage != .todo
+    }
+
     var body: some View {
-        HStack(spacing: 10) {
-            TextField("Add a new task…", text: $text)
+        VStack(alignment: .leading, spacing: 10) {
+            TextField("Add a new task…", text: $text, axis: .vertical)
+                .lineLimit(isExpanded ? 3 : 1)
                 .focused(focused)
                 .submitLabel(.send)
                 .onSubmit(submit)
-            Button(action: submit) {
-                Image(systemName: "arrow.up.circle.fill")
-                    .font(.title2)
+
+            if showDescription {
+                Divider()
+                TextField("Description (optional)", text: $notes, axis: .vertical)
+                    .lineLimit(2...5)
+                    .font(.subheadline)
             }
-            .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+
+            if isExpanded {
+                ComposerMetadata(
+                    tags: Array(selectedTags).sorted(),
+                    priority: priority,
+                    stage: stage,
+                    dueDate: dueDate,
+                    recurrence: recurrence
+                )
+            }
+
+            HStack(spacing: 8) {
+                Menu {
+                    if availableTags.isEmpty {
+                        Text("Create tags in Settings")
+                    } else {
+                        ForEach(availableTags, id: \.self) { tag in
+                            Button {
+                                if selectedTags.contains(tag) {
+                                    selectedTags.remove(tag)
+                                } else {
+                                    selectedTags.insert(tag)
+                                }
+                            } label: {
+                                Label(tag, systemImage: selectedTags.contains(tag) ? "checkmark" : "tag")
+                            }
+                        }
+                    }
+                } label: {
+                    ComposerButton(systemImage: "number", active: !selectedTags.isEmpty)
+                }
+
+                Button {
+                    showDueDatePicker = true
+                } label: {
+                    ComposerButton(systemImage: "calendar", active: dueDate != nil)
+                }
+
+                Button {
+                    withAnimation(.snappy) { showDescription.toggle() }
+                } label: {
+                    ComposerButton(systemImage: "text.alignleft", active: showDescription || !notes.isEmpty)
+                }
+
+                Menu {
+                    Button("No recurrence") { recurrence = nil }
+                    ForEach(TaskRecurrence.allCases) { option in
+                        Button {
+                            recurrence = option
+                        } label: {
+                            Label(option.rawValue, systemImage: recurrence == option ? "checkmark" : "repeat")
+                        }
+                    }
+                } label: {
+                    ComposerButton(systemImage: recurrence == nil ? "lock.fill" : "repeat", active: recurrence != nil)
+                }
+
+                Menu {
+                    Section("Status") {
+                        ForEach(TaskStage.allCases) { option in
+                            Button {
+                                stage = option
+                            } label: {
+                                Label(option.rawValue, systemImage: stage == option ? "checkmark" : "circle.fill")
+                            }
+                        }
+                    }
+                    Section("Priority") {
+                        ForEach(TaskPriority.allCases) { option in
+                            Button {
+                                priority = option
+                            } label: {
+                                Label(option.rawValue, systemImage: priority == option ? "checkmark" : option.symbol)
+                            }
+                        }
+                    }
+                } label: {
+                    ComposerButton(systemImage: "flag", active: priority != .none || stage != .todo)
+                }
+
+                Spacer()
+
+                if focused.wrappedValue {
+                    Button {
+                        focused.wrappedValue = false
+                    } label: {
+                        ComposerButton(systemImage: "keyboard.chevron.compact.down", active: false)
+                    }
+                }
+
+                if isExpanded {
+                    Button(action: submit) {
+                        Image(systemName: "arrow.up")
+                            .font(.headline.weight(.semibold))
+                            .foregroundStyle(.white)
+                            .frame(width: 38, height: 38)
+                            .background(.blue, in: Circle())
+                    }
+                    .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .opacity(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? 0.45 : 1)
+                }
+            }
         }
-        .padding(12)
-        .background(.bar)
+        .padding(14)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 22))
+        .overlay {
+            RoundedRectangle(cornerRadius: 22)
+                .strokeBorder(.white.opacity(0.75), lineWidth: 0.5)
+        }
+        .shadow(color: .black.opacity(0.12), radius: 18, y: 8)
+        .padding(.horizontal, 7)
+        .padding(.vertical, 8)
+        .background(.clear)
+        .onTapGesture { focused.wrappedValue = true }
+    }
+}
+
+struct ComposerButton: View {
+    let systemImage: String
+    let active: Bool
+
+    var body: some View {
+        Image(systemName: systemImage)
+            .font(.body.weight(.medium))
+            .foregroundStyle(active ? .blue : .secondary)
+            .frame(width: 36, height: 36)
+            .background(active ? Color.blue.opacity(0.12) : Color(uiColor: .tertiarySystemFill), in: Circle())
+    }
+}
+
+struct ComposerMetadata: View {
+    let tags: [String]
+    let priority: TaskPriority
+    let stage: TaskStage
+    let dueDate: Date?
+    let recurrence: TaskRecurrence?
+
+    var body: some View {
+        ScrollView(.horizontal) {
+            HStack(spacing: 6) {
+                if let dueDate {
+                    MetadataPill(text: dueDate.formatted(date: .abbreviated, time: .omitted), systemImage: "calendar", color: .blue)
+                }
+                if priority != .none {
+                    MetadataPill(text: priority.rawValue, systemImage: priority.symbol, color: priority.color)
+                }
+                if stage != .todo {
+                    MetadataPill(text: stage.rawValue, systemImage: "flag.fill", color: stage.color)
+                }
+                if let recurrence {
+                    MetadataPill(text: recurrence.rawValue, systemImage: "repeat", color: .purple)
+                }
+                ForEach(tags, id: \.self) { tag in
+                    MetadataPill(text: tag, systemImage: "sparkles", color: .blue)
+                }
+            }
+        }
+        .scrollIndicators(.hidden)
+    }
+}
+
+struct DueDatePickerSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @Binding var date: Date?
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                DatePicker(
+                    "Due date",
+                    selection: Binding(
+                        get: { date ?? .now },
+                        set: { date = $0 }
+                    ),
+                    displayedComponents: .date
+                )
+                if date != nil {
+                    Button("Remove Due Date", role: .destructive) {
+                        date = nil
+                        dismiss()
+                    }
+                }
+            }
+            .navigationTitle("Due Date")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") {
+                        if date == nil { date = .now }
+                        dismiss()
+                    }
+                }
+            }
+        }
+        .presentationDetents([.medium])
     }
 }

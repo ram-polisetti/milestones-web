@@ -105,13 +105,26 @@ final class MilestonesStore: ObservableObject {
         }
     }
 
-    func addTask(projectID: UUID, milestoneID: UUID, title: String, tags: [String] = [], priority: TaskPriority = .none, dueDate: Date? = nil) {
+    func addTask(
+        projectID: UUID,
+        milestoneID: UUID,
+        title: String,
+        notes: String = "",
+        stage: TaskStage = .todo,
+        tags: [String] = [],
+        priority: TaskPriority = .none,
+        dueDate: Date? = nil,
+        recurrence: TaskRecurrence? = nil
+    ) {
         let parsed = Self.parseQuickTask(title)
         let task = MilestoneTask(
             title: parsed.title,
+            notes: notes,
+            stage: stage,
             priority: parsed.priority ?? priority,
             dueDate: parsed.dueDate ?? dueDate,
-            tags: Array(Set(tags + parsed.tags)).sorted()
+            tags: Array(Set(tags + parsed.tags)).sorted(),
+            recurrence: recurrence
         )
         mutateMilestone(projectID: projectID, milestoneID: milestoneID) {
             $0.tasks.insert(task, at: 0)

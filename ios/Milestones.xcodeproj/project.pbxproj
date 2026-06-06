@@ -77,7 +77,6 @@
 				4AC2D23C56F454BC197E6868 /* Models.swift */,
 				B42AFC2A42CC0DB7FB24461C /* TaskViews.swift */,
 			);
-			name = Milestones;
 			path = Milestones;
 			sourceTree = "<group>";
 		};
@@ -117,6 +116,12 @@
 			attributes = {
 				LastSwiftUpdateCheck = 1600;
 				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					5FB48B1C17339C79D9639514 = {
+						DevelopmentTeam = S5NFW9785Z;
+						ProvisioningStyle = Automatic;
+					};
+				};
 			};
 			buildConfigurationList = BE20702A71BEA0E625B4B594 /* Build configuration list for PBXProject "Milestones" */;
 			compatibilityVersion = "Xcode 3.2";
@@ -127,8 +132,6 @@
 				Base,
 			);
 			mainGroup = 03B62C6F89B0D04678B9FEA5;
-			minimizedProjectReferenceProxies = 0;
-			preferredProjectObjectVersion = 77;
 			productRefGroup = 8D1C675BBA65704A9B15BCC0 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -234,7 +237,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = S5NFW9785Z;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = Milestones;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
@@ -300,8 +303,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_COMPILATION_MODE = wholemodule;
-				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";
 				SWIFT_VERSION = 5.0;
 			};
 			name = Release;
@@ -313,7 +315,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = S5NFW9785Z;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = Milestones;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";

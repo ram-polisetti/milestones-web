@@ -131,6 +131,12 @@ struct TaskEditor: View {
                     Picker("Priority", selection: $task.priority) {
                         ForEach(TaskPriority.allCases) { Text($0.rawValue).tag($0) }
                     }
+                    Picker("Repeat", selection: $task.recurrence) {
+                        Text("Never").tag(TaskRecurrence?.none)
+                        ForEach(TaskRecurrence.allCases) { option in
+                            Text(option.rawValue).tag(TaskRecurrence?.some(option))
+                        }
+                    }
                 }
                 Section("Due date") {
                     Toggle("Set due date", isOn: $hasDueDate)
