@@ -375,7 +375,7 @@ button {
 .tasks-scroll {
   height: 100%;
   overflow: auto;
-  padding: 56px 26px 80px;
+  padding: 56px 22px 80px;
 }
 
 .tasks-scroll > h1 {
@@ -417,30 +417,71 @@ button {
   cursor: pointer;
 }
 
-.task-group {
+.kanban-board {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(180px, 1fr));
+  align-items: start;
+  gap: 12px;
   margin-top: 20px;
 }
 
+.task-group {
+  margin-top: 20px;
+  padding: 5px;
+  border: 2px solid transparent;
+  border-radius: 20px;
+  transition: background .15s ease, border-color .15s ease;
+}
+
+.kanban-board .task-group {
+  margin-top: 0;
+}
+
+.task-group.drag-over {
+  border-color: #159ef2;
+  background: rgba(21, 158, 242, .08);
+}
+
 .task-group h3 {
-  margin: 0 0 8px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 8px 8px;
   color: #777;
   font-size: 13px;
   font-weight: 500;
 }
 
+.task-group h3 span {
+  display: grid;
+  min-width: 20px;
+  height: 20px;
+  place-items: center;
+  padding: 0 5px;
+  font-size: 10px;
+  background: #e3e2e8;
+  border-radius: 999px;
+}
+
 .task-card {
   overflow: hidden;
-  padding: 0 16px;
+  padding: 0 12px;
   border-radius: 18px;
   background: #fff;
+  box-shadow: 0 1px 5px rgba(0,0,0,.035);
 }
 
 .task-row {
   display: flex;
   align-items: center;
-  min-height: 49px;
+  min-height: 58px;
   gap: 9px;
   border-bottom: 1px solid #e5e5e7;
+  cursor: grab;
+}
+
+.task-row:active {
+  cursor: grabbing;
 }
 
 .task-row:last-child {
@@ -507,6 +548,35 @@ button {
 
 .task-row:hover .task-delete {
   opacity: 1;
+}
+
+.task-stage-select {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  color: transparent;
+  border: 0;
+  border-radius: 7px;
+  outline: 0;
+  background: #efeff2;
+  cursor: pointer;
+}
+
+.task-stage-select:hover,
+.task-stage-select:focus {
+  width: auto;
+  padding: 0 5px;
+  color: #555;
+}
+
+.empty-column {
+  display: grid;
+  min-height: 82px;
+  place-items: center;
+  color: #aaa;
+  font-size: 12px;
+  border: 1px dashed #d7d7dc;
+  border-radius: 12px;
 }
 
 .mobile-task-add {
@@ -929,6 +999,8 @@ button {
 
   .task-group {
     margin-top: 24px;
+    padding: 0;
+    border: 0;
   }
 
   .task-group h3 {
@@ -941,6 +1013,11 @@ button {
     border-radius: 22px;
   }
 
+  .kanban-board {
+    display: block;
+    margin-top: 0;
+  }
+
   .task-row {
     min-height: 64px;
   }
@@ -951,6 +1028,12 @@ button {
 
   .task-delete {
     opacity: 1;
+  }
+
+  .task-stage-select {
+    width: auto;
+    padding: 0 5px;
+    color: #666;
   }
 
   .mobile-task-add {

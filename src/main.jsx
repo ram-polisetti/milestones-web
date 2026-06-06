@@ -398,9 +398,16 @@ function MilestonesPane({ project, selectedId, onSelect, onAdd, onBack }) {
   );
 }
 
-function TaskRow({ task, onToggle, onDelete }) {
+function TaskRow({ task, onToggle, onDelete, onMove }) {
   return (
-    <div className={`task-row ${task.stage === "done" ? "complete" : ""}`}>
+    <div
+      className={`task-row ${task.stage === "done" ? "complete" : ""}`}
+      draggable
+      onDragStart={(event) => {
+        event.dataTransfer.effectAllowed = "move";
+        event.dataTransfer.setData("text/plain", task.id);
+      }}
+    >
       <button className={`task-check ${task.stage}`} onClick={onToggle} aria-label={`Complete ${task.title}`}>
         {task.stage === "done" && <Check size={12} strokeWidth={3} />}
       </button>
@@ -412,26 +419,60 @@ function TaskRow({ task, onToggle, onDelete }) {
           </span>
         )}
       </div>
+      <select
+        className="task-stage-select"
+        aria-label={`Status for ${task.title}`}
+        value={task.stage}
+        onChange={(event) => onMove(event.target.value)}
+        onClick={(event) => event.stopPropagation()}
+      >
+        <option value="todo">To Do</option>
+        <option value="progress">In Progress</option>
+        <option value="done">Done</option>
+      </select>
       <button className="task-delete" onClick={onDelete} aria-label={`Delete ${task.title}`}><X size={14} /></button>
     </div>
   );
 }
 
-function TaskGroup({ title, tasks, onToggle, onDelete }) {
-  if (!tasks.length) return null;
+function TaskGroup({ title, stage, tasks, onToggle, onDelete, onMove }) {
+  const [isDragOver, setIsDragOver] = useState(false);
   return (
-    <section className="task-group">
-      <h3>{title}</h3>
+    <section
+      className={`task-group ${isDragOver ? "drag-over" : ""}`}
+      onDragOver={(event) => {
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "move";
+        setIsDragOver(true);
+      }}
+      onDragLeave={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) setIsDragOver(false);
+      }}
+      onDrop={(event) => {
+        event.preventDefault();
+        setIsDragOver(false);
+        const taskId = event.dataTransfer.getData("text/plain");
+        if (taskId) onMove(taskId, stage);
+      }}
+    >
+      <h3>{title}<span>{tasks.length}</span></h3>
       <div className="task-card">
         {tasks.map((task) => (
-          <TaskRow task={task} onToggle={() => onToggle(task.id)} onDelete={() => onDelete(task.id)} key={task.id} />
+          <TaskRow
+            task={task}
+            onToggle={() => onToggle(task.id)}
+            onDelete={() => onDelete(task.id)}
+            onMove={(nextStage) => onMove(task.id, nextStage)}
+            key={task.id}
+          />
         ))}
+        {!tasks.length && <div className="empty-column">Drop tasks here</div>}
       </div>
     </section>
   );
 }
 
-function TasksPane({ milestone, tags, onAddTask, onToggle, onDelete, onBack }) {
+function TasksPane({ milestone, tags, onAddTask, onToggle, onDelete, onMove, onBack }) {
   const [title, setTitle] = useState("");
   const [selectedTag, setSelectedTag] = useState("");
   const grouped = {
@@ -461,9 +502,11 @@ function TasksPane({ milestone, tags, onAddTask, onToggle, onDelete, onBack }) {
           </select>
           <button type="submit" aria-label="Add task"><CirclePlus size={21} /></button>
         </form>
-        <TaskGroup title="In Progress" tasks={grouped.progress} onToggle={onToggle} onDelete={onDelete} />
-        <TaskGroup title="To Do" tasks={grouped.todo} onToggle={onToggle} onDelete={onDelete} />
-        <TaskGroup title="Done" tasks={grouped.done} onToggle={onToggle} onDelete={onDelete} />
+        <div className="kanban-board">
+          <TaskGroup title="To Do" stage="todo" tasks={grouped.todo} onToggle={onToggle} onDelete={onDelete} onMove={onMove} />
+          <TaskGroup title="In Progress" stage="progress" tasks={grouped.progress} onToggle={onToggle} onDelete={onDelete} onMove={onMove} />
+          <TaskGroup title="Done" stage="done" tasks={grouped.done} onToggle={onToggle} onDelete={onDelete} onMove={onMove} />
+        </div>
         {!milestone.tasks.length && <div className="empty-state large">Add the first task to this milestone.</div>}
       </div>
       <form className="mobile-task-add" onSubmit={submit}>
@@ -567,6 +610,13 @@ function App() {
     }));
   };
 
+  const moveTask = (taskId, stage) => {
+    updateMilestone(selectedProject.id, selectedMilestone.id, (milestone) => ({
+      ...milestone,
+      tasks: milestone.tasks.map((task) => (task.id === taskId ? { ...task, stage } : task)),
+    }));
+  };
+
   return (
     <div className={`app-shell mobile-${mobileView}`}>
       <ProjectSidebar
@@ -594,6 +644,7 @@ function App() {
           onAddTask={addTask}
           onToggle={toggleTask}
           onDelete={deleteTask}
+          onMove={moveTask}
           onBack={() => setMobileView("milestones")}
         />
       ) : (
