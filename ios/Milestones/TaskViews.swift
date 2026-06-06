@@ -35,7 +35,7 @@ struct TaskBoardView: View {
     var body: some View {
         Group {
             if let milestone {
-                VStack(spacing: 0) {
+                ZStack(alignment: .bottom) {
                     if viewMode == .list {
                         TaskList(
                             milestone: milestone,
@@ -66,6 +66,7 @@ struct TaskBoardView: View {
                         availableTags: store.tags,
                         submit: addQuickTask
                     )
+                    .zIndex(1)
                 }
                 .navigationTitle(milestone.title)
                 .toolbar {
@@ -191,6 +192,7 @@ struct TaskList: View {
             }
         }
         .listStyle(.insetGrouped)
+        .contentMargins(.bottom, 76, for: .scrollContent)
         .scrollDismissesKeyboard(.interactively)
     }
 }
@@ -269,6 +271,7 @@ struct KanbanView: View {
             .padding()
         }
         .scrollIndicators(.hidden)
+        .safeAreaPadding(.bottom, 76)
         .background(Color(uiColor: .systemGroupedBackground))
     }
 }
