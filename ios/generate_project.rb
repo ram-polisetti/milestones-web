@@ -13,6 +13,8 @@ source_files.each do |path|
   reference = group.new_file(File.basename(path))
   target.source_build_phase.add_file_reference(reference)
 end
+asset_catalog = group.new_file("Assets.xcassets")
+target.resources_build_phase.add_file_reference(asset_catalog)
 
 target.build_configurations.each do |config|
   settings = config.build_settings
@@ -29,7 +31,7 @@ target.build_configurations.each do |config|
   settings["INFOPLIST_KEY_UILaunchScreen_Generation"] = "YES"
   settings["CODE_SIGN_STYLE"] = "Automatic"
   settings["DEVELOPMENT_TEAM"] = ""
-  settings["ASSETCATALOG_COMPILER_APPICON_NAME"] = ""
+  settings["ASSETCATALOG_COMPILER_APPICON_NAME"] = "AppIcon"
 end
 
 project.recreate_user_schemes

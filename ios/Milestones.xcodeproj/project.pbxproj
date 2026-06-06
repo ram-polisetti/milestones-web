@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0A5C11A8D27E4BF98B4D71A1 /* ASCIIBrand.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A5C11A8D27E4BF98B4D71A2 /* ASCIIBrand.swift */; };
+		0A5C11A8D27E4BF98B4D71A3 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0A5C11A8D27E4BF98B4D71A4 /* Assets.xcassets */; };
 		2B85345B6767DF49EB02E472 /* TaskViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = B42AFC2A42CC0DB7FB24461C /* TaskViews.swift */; };
 		3BC6005D543C4085D620EF85 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D8FE80C78C9D4B4B52BFB64 /* ContentView.swift */; };
 		4ABF70D78CA476D53576A9E7 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C47821EBC45EF82A00A8FB23 /* Foundation.framework */; };
@@ -18,6 +20,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		0A5C11A8D27E4BF98B4D71A2 /* ASCIIBrand.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ASCIIBrand.swift; sourceTree = "<group>"; };
+		0A5C11A8D27E4BF98B4D71A4 /* Assets.xcassets */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		445F38AE2E91B1EEA5E5966E /* MilestoneViews.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MilestoneViews.swift; sourceTree = "<group>"; };
 		4AC2D23C56F454BC197E6868 /* Models.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 		5D8FE80C78C9D4B4B52BFB64 /* ContentView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -69,6 +73,8 @@
 		BE72F0D372F77A621A040B0E /* Milestones */ = {
 			isa = PBXGroup;
 			children = (
+				0A5C11A8D27E4BF98B4D71A2 /* ASCIIBrand.swift */,
+				0A5C11A8D27E4BF98B4D71A4 /* Assets.xcassets */,
 				5D8FE80C78C9D4B4B52BFB64 /* ContentView.swift */,
 				CD7EC72E6A8A004E601A77AD /* FormsAndSettings.swift */,
 				445F38AE2E91B1EEA5E5966E /* MilestoneViews.swift */,
@@ -146,6 +152,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0A5C11A8D27E4BF98B4D71A3 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -156,6 +163,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0A5C11A8D27E4BF98B4D71A1 /* ASCIIBrand.swift in Sources */,
 				3BC6005D543C4085D620EF85 /* ContentView.swift in Sources */,
 				7EE9C488A337D5DCDB5C6216 /* FormsAndSettings.swift in Sources */,
 				A87E9A4CCC991544AE3EAC94 /* MilestoneViews.swift in Sources */,
@@ -233,7 +241,7 @@
 		9DE7525C53CC539F27B83142 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = "";
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				CODE_SIGN_STYLE = Automatic;
@@ -311,7 +319,7 @@
 		FC1AEF9F14418621D7A02F4A /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = "";
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				CODE_SIGN_STYLE = Automatic;

@@ -142,6 +142,9 @@ struct ProjectSidebar: View {
         }
         .navigationTitle("Projects")
         .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                ASCIIBrandMark(size: 36)
+            }
             ToolbarItemGroup(placement: .topBarTrailing) {
                 Button {
                     showProjectForm = true
@@ -167,6 +170,9 @@ struct ProjectSidebar: View {
                 TextField("Search", text: $searchText)
                     .focused($searchFocused)
                     .submitLabel(.search)
+                    .onSubmit {
+                        searchFocused = false
+                    }
                 if !searchText.isEmpty {
                     Button {
                         searchText = ""
