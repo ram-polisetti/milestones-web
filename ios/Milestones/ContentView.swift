@@ -110,74 +110,35 @@ struct ProjectSidebar: View {
     }
 
     var body: some View {
-        ZStack(alignment: .bottom) {
-            List(selection: $selection) {
-                Section {
-                    Label("Today", systemImage: "star.fill")
-                        .foregroundStyle(.primary)
-                        .tag(SidebarSelection.today)
-                    Label("Upcoming", systemImage: "calendar")
-                        .tag(SidebarSelection.upcoming)
-                    Label("Inbox", systemImage: "tray")
-                        .tag(SidebarSelection.inbox)
-                }
+        List(selection: $selection) {
+            Section {
+                Label("Today", systemImage: "star.fill")
+                    .foregroundStyle(.primary)
+                    .tag(SidebarSelection.today)
+                Label("Upcoming", systemImage: "calendar")
+                    .tag(SidebarSelection.upcoming)
+                Label("Inbox", systemImage: "tray")
+                    .tag(SidebarSelection.inbox)
+            }
 
-                Section {
-                    ForEach(projects) { project in
-                        ProjectRow(project: project)
-                            .tag(SidebarSelection.project(project.id))
-                            .contextMenu {
-                                Button("Archive", systemImage: "archivebox") {
-                                    store.archiveProject(id: project.id)
-                                }
-                                Button("Delete", systemImage: "trash", role: .destructive) {
-                                    store.deleteProject(id: project.id)
-                                }
+            Section {
+                ForEach(projects) { project in
+                    ProjectRow(project: project)
+                        .tag(SidebarSelection.project(project.id))
+                        .contextMenu {
+                            Button("Archive", systemImage: "archivebox") {
+                                store.archiveProject(id: project.id)
                             }
-                    }
-                }
-            }
-            .contentMargins(.bottom, 88, for: .scrollContent)
-            .scrollDismissesKeyboard(.interactively)
-
-            HStack(spacing: 12) {
-                HStack(spacing: 10) {
-                    Image(systemName: "magnifyingglass")
-                        .font(.body.weight(.medium))
-                    TextField("Search", text: $searchText)
-                        .focused($searchFocused)
-                        .submitLabel(.search)
-                    if !searchText.isEmpty {
-                        Button {
-                            searchText = ""
-                        } label: {
-                            Image(systemName: "xmark.circle.fill")
-                                .foregroundStyle(.secondary)
+                            Button("Delete", systemImage: "trash", role: .destructive) {
+                                store.deleteProject(id: project.id)
+                            }
                         }
-                        .buttonStyle(.plain)
-                    }
                 }
-                .padding(.horizontal, 18)
-                .padding(.vertical, 14)
-                .background(Color(uiColor: .systemBackground), in: Capsule())
-                .shadow(color: .black.opacity(0.13), radius: 20, y: 9)
-
-                Button {
-                    showProjectForm = true
-                } label: {
-                    Image(systemName: "plus")
-                        .font(.title3.weight(.semibold))
-                        .foregroundStyle(.white)
-                        .frame(width: 52, height: 52)
-                        .background(Color.accentColor, in: Circle())
-                }
-                .buttonStyle(.plain)
-                .shadow(color: .black.opacity(0.15), radius: 14, y: 7)
-                .accessibilityLabel("New Project")
             }
-            .padding(.horizontal, 16)
-            .padding(.bottom, 8)
-            .zIndex(1)
+        }
+        .scrollDismissesKeyboard(.interactively)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            projectBottomControls
         }
         .navigationTitle("Projects")
         .toolbar {
@@ -196,6 +157,46 @@ struct ProjectSidebar: View {
                 .accessibilityLabel("Settings")
             }
         }
+    }
+
+    private var projectBottomControls: some View {
+        HStack(spacing: 12) {
+            HStack(spacing: 10) {
+                Image(systemName: "magnifyingglass")
+                    .font(.body.weight(.medium))
+                TextField("Search", text: $searchText)
+                    .focused($searchFocused)
+                    .submitLabel(.search)
+                if !searchText.isEmpty {
+                    Button {
+                        searchText = ""
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 18)
+            .padding(.vertical, 14)
+            .background(Color(uiColor: .systemBackground), in: Capsule())
+            .shadow(color: .black.opacity(0.13), radius: 20, y: 9)
+
+            Button {
+                showProjectForm = true
+            } label: {
+                Image(systemName: "plus")
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: 52, height: 52)
+                    .background(Color.accentColor, in: Circle())
+            }
+            .buttonStyle(.plain)
+            .shadow(color: .black.opacity(0.15), radius: 14, y: 7)
+            .accessibilityLabel("New Project")
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
     }
 }
 
