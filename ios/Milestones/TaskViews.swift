@@ -156,7 +156,7 @@ struct TaskList: View {
             ForEach(TaskStage.allCases, id: \.self) { stage in
                 let tasks = milestone.tasks.filter { $0.stage == stage }
                 if !tasks.isEmpty {
-                    Section(stage.rawValue) {
+                    Section {
                         ForEach(tasks) { task in
                             TaskListRow(task: task) {
                                 onToggle(task)
@@ -179,6 +179,8 @@ struct TaskList: View {
                                 .tint(task.stage == .done ? .gray : .green)
                             }
                         }
+                    } header: {
+                        TaskSectionHeader(stage: stage, count: tasks.count)
                     }
                 }
             }
@@ -191,9 +193,30 @@ struct TaskList: View {
                 .listRowBackground(Color.clear)
             }
         }
-        .listStyle(.insetGrouped)
+        .listStyle(.plain)
+        .background(Color(uiColor: .systemBackground))
         .contentMargins(.bottom, 76, for: .scrollContent)
         .scrollDismissesKeyboard(.interactively)
+    }
+}
+
+struct TaskSectionHeader: View {
+    let stage: TaskStage
+    let count: Int
+
+    var body: some View {
+        HStack(spacing: 7) {
+            Text(stage.rawValue)
+                .font(.title3.weight(.bold))
+                .foregroundStyle(stage.color)
+                .textCase(nil)
+            Text(count, format: .number)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.secondary)
+            Spacer()
+        }
+        .padding(.top, 10)
+        .padding(.bottom, 4)
     }
 }
 
@@ -202,47 +225,104 @@ struct TaskListRow: View {
     let onToggle: () -> Void
 
     var body: some View {
-        HStack(alignment: .top, spacing: 10) {
+        HStack(alignment: .top, spacing: 12) {
             Button(action: onToggle) {
-                Image(systemName: task.stage == .done ? "checkmark.circle.fill" : "circle.fill")
-                    .foregroundStyle(task.stage.color)
-            }
-            .buttonStyle(.plain)
-
-            VStack(alignment: .leading, spacing: 5) {
-                Text(task.title)
-                    .strikethrough(task.stage == .done)
-                    .foregroundStyle(task.stage == .done ? .secondary : .primary)
-
-                ScrollView(.horizontal) {
-                    HStack(spacing: 5) {
-                    if let dueDate = task.dueDate {
-                        MetadataPill(
-                            text: dueDate.dueDateLabel,
-                            systemImage: "calendar",
-                            color: dueDate.isOverdue && task.stage != .done ? .red : .secondary
-                        )
-                    }
-                    if task.priority != .none {
-                        MetadataPill(
-                            text: task.priority.rawValue,
-                            systemImage: task.priority.symbol,
-                            color: task.priority.color
-                        )
-                    }
-                    if let recurrence = task.recurrence {
-                        MetadataPill(text: recurrence.rawValue, systemImage: "repeat", color: .purple)
-                    }
-                    ForEach(task.tags, id: \.self) { tag in
-                        MetadataPill(text: tag, systemImage: "sparkles", color: .blue)
-                    }
+                ZStack {
+                    Circle()
+                        .strokeBorder(completionColor, lineWidth: 1.8)
+                    if task.stage == .done {
+                        Circle()
+                            .fill(completionColor)
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundStyle(.white)
+                    } else if task.stage == .inProgress {
+                        Circle()
+                            .fill(completionColor.opacity(0.18))
+                            .padding(3.5)
                     }
                 }
-                .scrollIndicators(.hidden)
+                .frame(width: 22, height: 22)
+            }
+            .buttonStyle(.plain)
+            .padding(.top, 1)
+            .accessibilityLabel(task.stage == .done ? "Mark incomplete" : "Mark complete")
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(task.title)
+                    .font(.body)
+                    .strikethrough(task.stage == .done)
+                    .foregroundStyle(task.stage == .done ? .secondary : .primary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                if !task.notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    Text(task.notes)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                }
+
+                if hasMetadata {
+                    ScrollView(.horizontal) {
+                        HStack(spacing: 10) {
+                            if let dueDate = task.dueDate {
+                                ReminderDetail(
+                                    text: dueDate.dueDateLabel,
+                                    systemImage: "calendar",
+                                    color: dueDate.isOverdue && task.stage != .done ? .red : .secondary
+                                )
+                            }
+                            if task.priority != .none {
+                                ReminderDetail(
+                                    text: task.priority.rawValue,
+                                    systemImage: "flag.fill",
+                                    color: task.priority.color
+                                )
+                            }
+                            if let recurrence = task.recurrence {
+                                ReminderDetail(text: recurrence.rawValue, systemImage: "repeat", color: .purple)
+                            }
+                            ForEach(task.tags, id: \.self) { tag in
+                                ReminderDetail(text: tag, systemImage: "tag.fill", color: .blue)
+                            }
+                        }
+                    }
+                    .scrollIndicators(.hidden)
+                }
             }
         }
-        .padding(.vertical, 3)
+        .padding(.vertical, 6)
+        .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
+        .listRowSeparatorTint(Color(uiColor: .separator).opacity(0.55))
+        .alignmentGuide(.listRowSeparatorLeading) { _ in 50 }
         .accessibilityElement(children: .combine)
+    }
+
+    private var completionColor: Color {
+        switch task.stage {
+        case .todo: .gray
+        case .inProgress, .done: .blue
+        }
+    }
+
+    private var hasMetadata: Bool {
+        task.dueDate != nil
+            || task.priority != .none
+            || task.recurrence != nil
+            || !task.tags.isEmpty
+    }
+}
+
+struct ReminderDetail: View {
+    let text: String
+    let systemImage: String
+    let color: Color
+
+    var body: some View {
+        Label(text, systemImage: systemImage)
+            .font(.caption)
+            .foregroundStyle(color)
+            .fixedSize()
     }
 }
 
