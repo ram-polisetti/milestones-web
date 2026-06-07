@@ -152,6 +152,7 @@ struct TaskBoardView: View {
         withAnimation(.easeInOut(duration: 0.18)) {
             composerActivated = true
         }
+        quickEntryFocused = true
     }
 }
 
@@ -515,25 +516,17 @@ struct TaskComposer: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            if isActivated {
+            HStack(spacing: 9) {
+                if !isActivated {
+                    Image(systemName: "plus")
+                        .font(.body.weight(.medium))
+                        .foregroundStyle(.primary)
+                }
                 TextField("Add a new task…", text: $text, axis: .vertical)
                     .lineLimit(3)
                     .focused(focused)
                     .submitLabel(.send)
                     .onSubmit(submitTask)
-            } else {
-                Button(action: activateComposer) {
-                    HStack(spacing: 9) {
-                        Image(systemName: "plus")
-                            .font(.body.weight(.medium))
-                            .foregroundStyle(.primary)
-                        Text("Add a new task…")
-                            .foregroundStyle(.tertiary)
-                        Spacer()
-                    }
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
             }
 
             if showDescription {
@@ -670,18 +663,14 @@ struct TaskComposer: View {
         .background(.clear)
         .ignoresSafeArea(.container, edges: .bottom)
         .animation(.snappy, value: isExpanded)
-        .task(id: isActivated) {
-            guard isActivated else { return }
-            withAnimation(.easeInOut(duration: 0.18)) {
-                showOptions = true
-            }
-            try? await Task.sleep(for: .milliseconds(200))
-            guard !Task.isCancelled, isActivated else { return }
-            focused.wrappedValue = true
+        .onChange(of: focused.wrappedValue) { _, isFocused in
+            guard isFocused else { return }
+            activateComposer()
         }
     }
 
     private func activateComposer() {
+        guard !isActivated || !showOptions else { return }
         withAnimation(.easeInOut(duration: 0.18)) {
             isActivated = true
             showOptions = true
