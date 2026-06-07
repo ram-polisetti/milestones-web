@@ -22,6 +22,7 @@ struct TaskBoardView: View {
     @State private var showComposerHelp = false
     @State private var editingTask: MilestoneTask?
     @State private var composerActivated = false
+    @State private var inlineEntryStage: TaskStage?
     @FocusState private var quickEntryFocused: Bool
 
     private var milestone: Milestone? {
@@ -43,7 +44,10 @@ struct TaskBoardView: View {
                             onEdit: { editingTask = $0 },
                             onToggle: toggle,
                             onDelete: delete,
-                            onInlineAdd: addInlineTask
+                            inlineTitle: $quickTitle,
+                            inlineStage: $inlineEntryStage,
+                            onBeginInlineEntry: beginInlineTask,
+                            onSubmitInlineEntry: addQuickTask
                         )
                     } else {
                         KanbanView(
@@ -65,6 +69,7 @@ struct TaskBoardView: View {
                         showDescription: $showDescription,
                         showDueDatePicker: $showDueDatePicker,
                         isActivated: $composerActivated,
+                        isInlineEntry: inlineEntryStage != nil,
                         focused: $quickEntryFocused,
                         availableTags: store.tags,
                         submit: addQuickTask
@@ -128,6 +133,7 @@ struct TaskBoardView: View {
         quickDueDate = nil
         quickRecurrence = nil
         showDescription = false
+        inlineEntryStage = nil
     }
 
     private func toggle(_ task: MilestoneTask) {
@@ -155,15 +161,16 @@ struct TaskBoardView: View {
         quickEntryFocused = true
     }
 
-    private func addInlineTask(_ title: String, in stage: TaskStage) {
-        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
-        store.addTask(
-            projectID: projectID,
-            milestoneID: milestoneID,
-            title: trimmed,
-            stage: stage
-        )
+    private func beginInlineTask(in stage: TaskStage) {
+        if inlineEntryStage != stage {
+            quickTitle = ""
+        }
+        inlineEntryStage = stage
+        quickStage = stage
+        quickEntryFocused = false
+        withAnimation(.easeInOut(duration: 0.18)) {
+            composerActivated = true
+        }
     }
 }
 
@@ -172,9 +179,11 @@ struct TaskList: View {
     let onEdit: (MilestoneTask) -> Void
     let onToggle: (MilestoneTask) -> Void
     let onDelete: (MilestoneTask) -> Void
-    let onInlineAdd: (String, TaskStage) -> Void
+    @Binding var inlineTitle: String
+    @Binding var inlineStage: TaskStage?
+    let onBeginInlineEntry: (TaskStage) -> Void
+    let onSubmitInlineEntry: () -> Void
     @State private var collapsedStages: Set<TaskStage> = []
-    @State private var inlineDrafts: [TaskStage: String] = [:]
     @FocusState private var focusedEntryStage: TaskStage?
 
     var body: some View {
@@ -244,14 +253,19 @@ struct TaskList: View {
                         TextField(
                             "",
                             text: Binding(
-                                get: { inlineDrafts[stage, default: ""] },
-                                set: { inlineDrafts[stage] = $0 }
+                                get: { inlineStage == stage ? inlineTitle : "" },
+                                set: { newValue in
+                                    if inlineStage != stage {
+                                        onBeginInlineEntry(stage)
+                                    }
+                                    inlineTitle = newValue
+                                }
                             )
                         )
                         .focused($focusedEntryStage, equals: stage)
                         .submitLabel(.done)
                         .onSubmit {
-                            submitInlineTask(in: stage)
+                            submitInlineTask()
                         }
                     }
                     .frame(maxWidth: .infinity)
@@ -259,6 +273,7 @@ struct TaskList: View {
                     .contentShape(Rectangle())
                     .simultaneousGesture(
                         TapGesture().onEnded {
+                            onBeginInlineEntry(stage)
                             focusedEntryStage = stage
                         }
                     )
@@ -280,16 +295,19 @@ struct TaskList: View {
         .background(Color(uiColor: .systemBackground))
         .contentMargins(.bottom, 76, for: .scrollContent)
         .scrollDismissesKeyboard(.interactively)
+        .onChange(of: inlineStage) { _, stage in
+            if stage == nil {
+                focusedEntryStage = nil
+            }
+        }
     }
 
-    private func submitInlineTask(in stage: TaskStage) {
-        let title = inlineDrafts[stage, default: ""]
-            .trimmingCharacters(in: .whitespacesAndNewlines)
+    private func submitInlineTask() {
+        let title = inlineTitle.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !title.isEmpty else { return }
 
-        onInlineAdd(title, stage)
-        inlineDrafts[stage] = ""
-        focusedEntryStage = stage
+        onSubmitInlineEntry()
+        focusedEntryStage = nil
     }
 }
 
@@ -581,6 +599,7 @@ struct TaskComposer: View {
     @Binding var showDescription: Bool
     @Binding var showDueDatePicker: Bool
     @Binding var isActivated: Bool
+    let isInlineEntry: Bool
     var focused: FocusState<Bool>.Binding
     let availableTags: [String]
     let submit: () -> Void
@@ -604,17 +623,19 @@ struct TaskComposer: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 9) {
-                if !isActivated {
-                    Image(systemName: "plus")
-                        .font(.body.weight(.medium))
-                        .foregroundStyle(.primary)
+            if !isInlineEntry {
+                HStack(spacing: 9) {
+                    if !isActivated {
+                        Image(systemName: "plus")
+                            .font(.body.weight(.medium))
+                            .foregroundStyle(.primary)
+                    }
+                    TextField("Add a new task…", text: $text, axis: .vertical)
+                        .lineLimit(3)
+                        .focused(focused)
+                        .submitLabel(.send)
+                        .onSubmit(submitTask)
                 }
-                TextField("Add a new task…", text: $text, axis: .vertical)
-                    .lineLimit(3)
-                    .focused(focused)
-                    .submitLabel(.send)
-                    .onSubmit(submitTask)
             }
 
             if showDescription {
@@ -768,6 +789,10 @@ struct TaskComposer: View {
         .animation(.snappy, value: isExpanded)
         .onChange(of: focused.wrappedValue) { _, isFocused in
             guard isFocused else { return }
+            activateComposer()
+        }
+        .onChange(of: isActivated) { _, activated in
+            guard activated else { return }
             activateComposer()
         }
     }
