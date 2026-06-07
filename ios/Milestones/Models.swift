@@ -15,6 +15,14 @@ enum TaskStage: String, Codable, CaseIterable, Identifiable {
         case .done: .green
         }
     }
+
+    var menuSymbol: String {
+        switch self {
+        case .todo: "circle"
+        case .inProgress: "circle.lefthalf.filled"
+        case .done: "checkmark.circle.fill"
+        }
+    }
 }
 
 enum TaskPriority: String, Codable, CaseIterable, Identifiable {
@@ -107,6 +115,50 @@ struct AppData: Codable {
     var projects: [Project]
     var inbox: [MilestoneTask]
     var tags: [String]
+    var tagIcons: [String: String] = [:]
+
+    enum CodingKeys: String, CodingKey {
+        case projects
+        case inbox
+        case tags
+        case tagIcons
+    }
+
+    init(projects: [Project], inbox: [MilestoneTask], tags: [String], tagIcons: [String: String] = [:]) {
+        self.projects = projects
+        self.inbox = inbox
+        self.tags = tags
+        self.tagIcons = tagIcons
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        projects = try container.decode([Project].self, forKey: .projects)
+        inbox = try container.decode([MilestoneTask].self, forKey: .inbox)
+        tags = try container.decode([String].self, forKey: .tags)
+        tagIcons = try container.decodeIfPresent([String: String].self, forKey: .tagIcons) ?? [:]
+    }
+}
+
+enum TagIcon {
+    static let defaultValue = "number"
+    static let choices = [
+        "number",
+        "tag.fill",
+        "sparkles",
+        "ladybug.fill",
+        "hammer.fill",
+        "paintbrush.fill",
+        "doc.text.fill",
+        "lightbulb.fill",
+        "bolt.fill",
+        "flag.fill",
+        "star.fill",
+        "person.fill",
+        "briefcase.fill",
+        "megaphone.fill",
+        "shippingbox.fill"
+    ]
 }
 
 extension Color {

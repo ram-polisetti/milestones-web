@@ -318,10 +318,26 @@ struct TaskEditor: View {
                 }
                 Section("Status") {
                     Picker("Stage", selection: $task.stage) {
-                        ForEach(TaskStage.allCases) { Text($0.rawValue).tag($0) }
+                        ForEach(TaskStage.allCases) { option in
+                            Label {
+                                Text(option.rawValue)
+                            } icon: {
+                                Image(systemName: option.menuSymbol)
+                                    .foregroundStyle(option.color)
+                            }
+                            .tag(option)
+                        }
                     }
                     Picker("Priority", selection: $task.priority) {
-                        ForEach(TaskPriority.allCases) { Text($0.rawValue).tag($0) }
+                        ForEach(TaskPriority.allCases) { option in
+                            Label {
+                                Text(option.rawValue)
+                            } icon: {
+                                Image(systemName: option.symbol)
+                                    .foregroundStyle(option.color)
+                            }
+                            .tag(option)
+                        }
                     }
                     Picker("Repeat", selection: $task.recurrence) {
                         Text("Never").tag(TaskRecurrence?.none)
@@ -345,16 +361,18 @@ struct TaskEditor: View {
                 }
                 Section("Tags") {
                     ForEach(store.tags, id: \.self) { tag in
-                        Toggle(tag, isOn: Binding(
-                            get: { task.tags.contains(tag) },
-                            set: { enabled in
-                                if enabled {
-                                    if !task.tags.contains(tag) { task.tags.append(tag) }
-                                } else {
-                                    task.tags.removeAll { $0 == tag }
+                        Toggle(isOn: Binding(
+                                get: { task.tags.contains(tag) },
+                                set: { enabled in
+                                    if enabled {
+                                        if !task.tags.contains(tag) { task.tags.append(tag) }
+                                    } else {
+                                        task.tags.removeAll { $0 == tag }
+                                    }
                                 }
+                            )) {
+                                Label(tag, systemImage: store.tagIcon(for: tag))
                             }
-                        ))
                     }
                 }
             }
@@ -450,13 +468,13 @@ struct SmartListView: View {
                             Button("Edit", systemImage: "pencil") {
                                 editingInboxTask = task
                             }
-                            .tint(.blue)
+                            .tint(.purple)
                             Button(task.stage == .done ? "Reopen" : "Done", systemImage: "checkmark") {
                                 var updated = task
                                 updated.stage = task.stage == .done ? .todo : .done
                                 store.updateInboxTask(updated)
                             }
-                            .tint(task.stage == .done ? .gray : .green)
+                            .tint(task.stage == .done ? .orange : .green)
                         }
                         .swipeActions(edge: .trailing) {
                             Button("Delete", systemImage: "trash", role: .destructive) {
@@ -490,7 +508,7 @@ struct SmartListView: View {
                             Button("Edit", systemImage: "pencil") {
                                 editingLocatedTask = located
                             }
-                            .tint(.blue)
+                            .tint(.purple)
                             Button(located.task.stage == .done ? "Reopen" : "Done", systemImage: "checkmark") {
                                 store.moveTask(
                                     projectID: located.projectID,
@@ -499,7 +517,7 @@ struct SmartListView: View {
                                     to: located.task.stage == .done ? .todo : .done
                                 )
                             }
-                            .tint(located.task.stage == .done ? .gray : .green)
+                            .tint(located.task.stage == .done ? .orange : .green)
                         }
                         .swipeActions(edge: .trailing) {
                             Button("Delete", systemImage: "trash", role: .destructive) {
@@ -568,6 +586,7 @@ struct SettingsView: View {
     @EnvironmentObject private var store: MilestonesStore
     @Environment(\.dismiss) private var dismiss
     @State private var newTag = ""
+    @State private var newTagIcon = TagIcon.defaultValue
     @State private var confirmReset = false
 
     var body: some View {
@@ -582,15 +601,29 @@ struct SettingsView: View {
                     }
                     HStack {
                         TextField("New tag", text: $newTag)
+                        Menu {
+                            ForEach(TagIcon.choices, id: \.self) { icon in
+                                Button {
+                                    newTagIcon = icon
+                                } label: {
+                                    Label(icon == newTagIcon ? "Selected" : "Use Icon", systemImage: icon)
+                                }
+                            }
+                        } label: {
+                            Image(systemName: newTagIcon)
+                                .frame(width: 30, height: 30)
+                        }
+                        .accessibilityLabel("Choose hashtag icon")
                         Button("Add") {
                             let trimmed = newTag.trimmingCharacters(in: .whitespaces)
-                            if !trimmed.isEmpty { store.addTag(trimmed) }
+                            if !trimmed.isEmpty { store.addTag(trimmed, icon: newTagIcon) }
                             newTag = ""
+                            newTagIcon = TagIcon.defaultValue
                         }
                     }
                     ForEach(store.tags, id: \.self) { tag in
                         HStack {
-                            Text(tag)
+                            Label(tag, systemImage: store.tagIcon(for: tag))
                             Spacer()
                             Button(role: .destructive) {
                                 store.deleteTag(tag)

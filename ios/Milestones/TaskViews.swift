@@ -183,11 +183,11 @@ struct TaskList: View {
                             Button("Edit", systemImage: "pencil") {
                                 onEdit(task)
                             }
-                            .tint(.blue)
+                            .tint(.purple)
                             Button(task.stage == .done ? "Reopen" : "Done", systemImage: "checkmark") {
                                 onToggle(task)
                             }
-                            .tint(task.stage == .done ? .gray : .green)
+                            .tint(task.stage == .done ? .orange : .green)
                         }
                     }
 
@@ -236,6 +236,7 @@ struct TaskSectionHeader: View {
 }
 
 struct TaskListRow: View {
+    @EnvironmentObject private var store: MilestonesStore
     let task: MilestoneTask
     let onToggle: () -> Void
 
@@ -298,7 +299,7 @@ struct TaskListRow: View {
                                 ReminderDetail(text: recurrence.rawValue, systemImage: "repeat", color: .purple)
                             }
                             ForEach(task.tags, id: \.self) { tag in
-                                ReminderDetail(text: tag, systemImage: "tag.fill", color: .blue)
+                                ReminderDetail(text: tag, systemImage: store.tagIcon(for: tag), color: .blue)
                             }
                         }
                     }
@@ -433,6 +434,7 @@ struct KanbanColumn: View {
 }
 
 struct KanbanCard: View {
+    @EnvironmentObject private var store: MilestonesStore
     let task: MilestoneTask
     let onToggle: () -> Void
     let onDelete: () -> Void
@@ -471,7 +473,7 @@ struct KanbanCard: View {
                     MetadataPill(text: recurrence.rawValue, systemImage: "repeat", color: .purple)
                 }
                 ForEach(task.tags, id: \.self) { tag in
-                    MetadataPill(text: tag, systemImage: "sparkles", color: .blue)
+                    MetadataPill(text: tag, systemImage: store.tagIcon(for: tag), color: .blue)
                 }
             }
         }
@@ -483,6 +485,7 @@ struct KanbanCard: View {
 }
 
 struct TaskComposer: View {
+    @EnvironmentObject private var store: MilestonesStore
     @Binding var text: String
     @Binding var notes: String
     @Binding var selectedTags: Set<String>
@@ -560,7 +563,12 @@ struct TaskComposer: View {
                                         selectedTags.insert(tag)
                                     }
                                 } label: {
-                                    Label(tag, systemImage: selectedTags.contains(tag) ? "checkmark" : "tag")
+                                    Label {
+                                        Text(tag)
+                                    } icon: {
+                                        Image(systemName: selectedTags.contains(tag) ? "checkmark.circle.fill" : store.tagIcon(for: tag))
+                                            .foregroundStyle(selectedTags.contains(tag) ? .blue : .secondary)
+                                    }
                                 }
                             }
                         }
@@ -603,7 +611,12 @@ struct TaskComposer: View {
                                 Button {
                                     stage = option
                                 } label: {
-                                    Label(option.rawValue, systemImage: stage == option ? "checkmark" : "circle.fill")
+                                    Label {
+                                        Text(option.rawValue)
+                                    } icon: {
+                                        Image(systemName: stage == option ? "checkmark.circle.fill" : option.menuSymbol)
+                                            .foregroundStyle(option.color)
+                                    }
                                 }
                             }
                         }
@@ -612,7 +625,12 @@ struct TaskComposer: View {
                                 Button {
                                     priority = option
                                 } label: {
-                                    Label(option.rawValue, systemImage: priority == option ? "checkmark" : option.symbol)
+                                    Label {
+                                        Text(option.rawValue)
+                                    } icon: {
+                                        Image(systemName: priority == option ? "checkmark.circle.fill" : option.symbol)
+                                            .foregroundStyle(option.color)
+                                    }
                                 }
                             }
                         }
@@ -702,6 +720,7 @@ struct ComposerButton: View {
 }
 
 struct ComposerMetadata: View {
+    @EnvironmentObject private var store: MilestonesStore
     let tags: [String]
     let priority: TaskPriority
     let stage: TaskStage
@@ -724,7 +743,7 @@ struct ComposerMetadata: View {
                     MetadataPill(text: recurrence.rawValue, systemImage: "repeat", color: .purple)
                 }
                 ForEach(tags, id: \.self) { tag in
-                    MetadataPill(text: tag, systemImage: "sparkles", color: .blue)
+                    MetadataPill(text: tag, systemImage: store.tagIcon(for: tag), color: .blue)
                 }
             }
         }

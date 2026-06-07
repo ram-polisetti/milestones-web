@@ -30,6 +30,10 @@ final class MilestonesStore: ObservableObject {
     var archivedProjects: [Project] { data.projects.filter(\.isArchived) }
     var tags: [String] { data.tags }
 
+    func tagIcon(for name: String) -> String {
+        data.tagIcons[name] ?? TagIcon.defaultValue
+    }
+
     func project(id: UUID?) -> Project? {
         guard let id else { return nil }
         return data.projects.first { $0.id == id }
@@ -188,15 +192,17 @@ final class MilestonesStore: ObservableObject {
         save()
     }
 
-    func addTag(_ name: String) {
+    func addTag(_ name: String, icon: String) {
         guard !data.tags.contains(name) else { return }
         data.tags.append(name)
+        data.tagIcons[name] = icon
         data.tags.sort()
         save()
     }
 
     func deleteTag(_ name: String) {
         data.tags.removeAll { $0 == name }
+        data.tagIcons.removeValue(forKey: name)
         for projectIndex in data.projects.indices {
             for milestoneIndex in data.projects[projectIndex].milestones.indices {
                 for taskIndex in data.projects[projectIndex].milestones[milestoneIndex].tasks.indices {
@@ -341,7 +347,12 @@ final class MilestonesStore: ObservableObject {
                 MilestoneTask(title: "Review App Store screenshots", dueDate: .now, tags: ["Feature"]),
                 MilestoneTask(title: "Reply to beta feedback", priority: .high),
             ],
-            tags: ["Bug", "Feature", "Refactor"]
+            tags: ["Bug", "Feature", "Refactor"],
+            tagIcons: [
+                "Bug": "ladybug.fill",
+                "Feature": "sparkles",
+                "Refactor": "hammer.fill"
+            ]
         )
     }
 }

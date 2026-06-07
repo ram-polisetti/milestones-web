@@ -39,10 +39,10 @@ struct MilestoneListView: View {
                                 MilestoneRow(milestone: milestone)
                                     .tag(milestone.id)
                                     .swipeActions(edge: .leading, allowsFullSwipe: false) {
-                                        Button("Edit", systemImage: "pencil") {
-                                            editingMilestone = milestone
-                                        }
-                                        .tint(.blue)
+                                    Button("Edit", systemImage: "pencil") {
+                                        editingMilestone = milestone
+                                    }
+                                    .tint(.purple)
                                     }
                                     .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                                         Button("Archive", systemImage: "archivebox") {
@@ -223,7 +223,7 @@ struct BacklogView: View {
                                     Button("Edit", systemImage: "pencil") {
                                         editingTask = task
                                     }
-                                    .tint(.blue)
+                                    .tint(.purple)
                                     Button(task.stage == .done ? "Reopen" : "Done", systemImage: "checkmark") {
                                         store.moveBacklogTask(
                                             projectID: projectID,
@@ -231,7 +231,7 @@ struct BacklogView: View {
                                             to: task.stage == .done ? .todo : .done
                                         )
                                     }
-                                    .tint(task.stage == .done ? .gray : .green)
+                                    .tint(task.stage == .done ? .orange : .green)
                                 }
                                 .swipeActions(edge: .trailing) {
                                     Button("Delete", systemImage: "trash", role: .destructive) {
