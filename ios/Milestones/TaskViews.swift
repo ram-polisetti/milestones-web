@@ -302,10 +302,6 @@ struct TaskSectionHeader: View {
     var body: some View {
         Button(action: onToggle) {
             HStack(spacing: 7) {
-                Image(systemName: "chevron.down")
-                    .font(.caption.weight(.bold))
-                    .foregroundStyle(.secondary)
-                    .rotationEffect(.degrees(isCollapsed ? -90 : 0))
                 Text(stage.rawValue)
                     .font(.title3.weight(.bold))
                     .foregroundStyle(stage.color)
@@ -314,6 +310,10 @@ struct TaskSectionHeader: View {
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.secondary)
                 Spacer()
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundStyle(.primary.opacity(0.8))
+                    .rotationEffect(.degrees(isCollapsed ? -90 : 0))
             }
             .contentShape(Rectangle())
         }
