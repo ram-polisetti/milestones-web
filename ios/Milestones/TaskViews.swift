@@ -162,67 +162,90 @@ struct TaskList: View {
     let onToggle: (MilestoneTask) -> Void
     let onDelete: (MilestoneTask) -> Void
     let onAdd: (TaskStage) -> Void
+    @State private var collapsedStages: Set<TaskStage> = []
 
     var body: some View {
         List {
             ForEach(TaskStage.allCases, id: \.self) { stage in
                 let tasks = milestone.tasks.filter { $0.stage == stage }
-                TaskSectionHeader(stage: stage, count: tasks.count)
+                TaskSectionHeader(
+                    stage: stage,
+                    count: tasks.count,
+                    isCollapsed: collapsedStages.contains(stage)
+                ) {
+                    withAnimation(.snappy) {
+                        if collapsedStages.contains(stage) {
+                            collapsedStages.remove(stage)
+                        } else {
+                            collapsedStages.insert(stage)
+                        }
+                    }
+                }
                     .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
                     .listRowSeparator(.hidden)
                     .listRowBackground(Color.clear)
 
-                ForEach(tasks) { task in
-                    TaskListRow(task: task) {
-                        onToggle(task)
+                if collapsedStages.contains(stage) {
+                    if stage != TaskStage.allCases.last {
+                        Rectangle()
+                            .fill(Color(uiColor: .separator).opacity(0.62))
+                            .frame(height: 2)
+                            .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 7, trailing: 16))
+                            .listRowSeparator(.hidden)
                     }
-                    .contentShape(Rectangle())
-                    .onTapGesture { onEdit(task) }
-                    .swipeActions(edge: .trailing) {
-                        Button("Delete", systemImage: "trash", role: .destructive) {
-                            onDelete(task)
-                        }
-                    }
-                    .swipeActions(edge: .leading, allowsFullSwipe: false) {
-                        Button("Edit", systemImage: "pencil") {
-                            onEdit(task)
-                        }
-                        .tint(.purple)
-                        Button(task.stage == .done ? "Reopen" : "Done", systemImage: "checkmark") {
+                } else {
+                    ForEach(tasks) { task in
+                        TaskListRow(task: task) {
                             onToggle(task)
                         }
-                        .tint(task.stage == .done ? .orange : .green)
-                    }
-                }
-
-                Button {
-                    onAdd(stage)
-                } label: {
-                    HStack {
-                        Circle()
-                            .stroke(
-                                Color(uiColor: .systemGray3),
-                                style: StrokeStyle(lineWidth: 1.5, lineCap: .round, dash: [1, 3])
-                            )
-                            .frame(width: 22, height: 22)
-                        Spacer()
-                    }
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 36)
-                    .contentShape(Rectangle())
-                    .overlay(alignment: .bottom) {
-                        if stage != TaskStage.allCases.last {
-                            Rectangle()
-                                .fill(Color(uiColor: .separator).opacity(0.62))
-                                .frame(height: 2)
-                                .offset(y: 7)
+                        .contentShape(Rectangle())
+                        .onTapGesture { onEdit(task) }
+                        .swipeActions(edge: .trailing) {
+                            Button("Delete", systemImage: "trash", role: .destructive) {
+                                onDelete(task)
+                            }
+                        }
+                        .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                            Button("Edit", systemImage: "pencil") {
+                                onEdit(task)
+                            }
+                            .tint(.purple)
+                            Button(task.stage == .done ? "Reopen" : "Done", systemImage: "checkmark") {
+                                onToggle(task)
+                            }
+                            .tint(task.stage == .done ? .orange : .green)
                         }
                     }
+
+                    Button {
+                        onAdd(stage)
+                    } label: {
+                        HStack {
+                            Circle()
+                                .stroke(
+                                    Color(uiColor: .systemGray3),
+                                    style: StrokeStyle(lineWidth: 1.5, lineCap: .round, dash: [1, 3])
+                                )
+                                .frame(width: 22, height: 22)
+                            Spacer()
+                        }
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 36)
+                        .contentShape(Rectangle())
+                        .overlay(alignment: .bottom) {
+                            if stage != TaskStage.allCases.last {
+                                Rectangle()
+                                    .fill(Color(uiColor: .separator).opacity(0.62))
+                                    .frame(height: 2)
+                                    .offset(y: 7)
+                            }
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Add task to \(stage.rawValue)")
+                    .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 7, trailing: 16))
+                    .listRowSeparator(.hidden)
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Add task to \(stage.rawValue)")
-                .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 7, trailing: 16))
-                .listRowSeparator(.hidden)
             }
         }
         .listStyle(.plain)
@@ -235,18 +258,29 @@ struct TaskList: View {
 struct TaskSectionHeader: View {
     let stage: TaskStage
     let count: Int
+    let isCollapsed: Bool
+    let onToggle: () -> Void
 
     var body: some View {
-        HStack(spacing: 7) {
-            Text(stage.rawValue)
-                .font(.title3.weight(.bold))
-                .foregroundStyle(stage.color)
-                .textCase(nil)
-            Text(count, format: .number)
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.secondary)
-            Spacer()
+        Button(action: onToggle) {
+            HStack(spacing: 7) {
+                Image(systemName: "chevron.down")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(.secondary)
+                    .rotationEffect(.degrees(isCollapsed ? -90 : 0))
+                Text(stage.rawValue)
+                    .font(.title3.weight(.bold))
+                    .foregroundStyle(stage.color)
+                    .textCase(nil)
+                Text(count, format: .number)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                Spacer()
+            }
+            .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
+        .accessibilityLabel("\(isCollapsed ? "Expand" : "Collapse") \(stage.rawValue)")
         .padding(.top, 7)
         .padding(.bottom, 7)
     }
