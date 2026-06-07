@@ -194,21 +194,31 @@ struct TaskList: View {
                     Button {
                         onAdd(stage)
                     } label: {
-                        Label("Add Task", systemImage: "plus")
-                            .font(.body)
-                            .foregroundStyle(stage.color)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.vertical, 5)
+                        Color.clear
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 44)
+                            .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
-                    .listRowInsets(EdgeInsets(top: 0, leading: 38, bottom: 0, trailing: 16))
+                    .accessibilityLabel("Add task to \(stage.rawValue)")
+                    .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
                     .listRowSeparator(.hidden)
+
+                    if stage != TaskStage.allCases.last {
+                        Rectangle()
+                            .fill(Color(uiColor: .separator).opacity(0.28))
+                            .frame(height: 1)
+                            .padding(.vertical, 16)
+                            .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
+                            .listRowSeparator(.hidden)
+                    }
                 } header: {
                     TaskSectionHeader(stage: stage, count: tasks.count)
                 }
             }
         }
         .listStyle(.plain)
+        .listSectionSpacing(.custom(8))
         .background(Color(uiColor: .systemBackground))
         .contentMargins(.bottom, 76, for: .scrollContent)
         .scrollDismissesKeyboard(.interactively)
@@ -230,8 +240,8 @@ struct TaskSectionHeader: View {
                 .foregroundStyle(.secondary)
             Spacer()
         }
-        .padding(.top, 10)
-        .padding(.bottom, 4)
+        .padding(.top, 14)
+        .padding(.bottom, 8)
     }
 }
 
@@ -307,10 +317,9 @@ struct TaskListRow: View {
                 }
             }
         }
-        .padding(.vertical, 6)
+        .padding(.vertical, 9)
         .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
-        .listRowSeparatorTint(Color(uiColor: .separator).opacity(0.55))
-        .alignmentGuide(.listRowSeparatorLeading) { _ in 50 }
+        .listRowSeparator(.hidden)
         .accessibilityElement(children: .combine)
     }
 
