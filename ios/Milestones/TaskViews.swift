@@ -43,7 +43,7 @@ struct TaskBoardView: View {
                             onEdit: { editingTask = $0 },
                             onToggle: toggle,
                             onDelete: delete,
-                            onAdd: beginTask
+                            onInlineAdd: addInlineTask
                         )
                     } else {
                         KanbanView(
@@ -154,6 +154,17 @@ struct TaskBoardView: View {
         }
         quickEntryFocused = true
     }
+
+    private func addInlineTask(_ title: String, in stage: TaskStage) {
+        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        store.addTask(
+            projectID: projectID,
+            milestoneID: milestoneID,
+            title: trimmed,
+            stage: stage
+        )
+    }
 }
 
 struct TaskList: View {
@@ -161,8 +172,10 @@ struct TaskList: View {
     let onEdit: (MilestoneTask) -> Void
     let onToggle: (MilestoneTask) -> Void
     let onDelete: (MilestoneTask) -> Void
-    let onAdd: (TaskStage) -> Void
+    let onInlineAdd: (String, TaskStage) -> Void
     @State private var collapsedStages: Set<TaskStage> = []
+    @State private var inlineDrafts: [TaskStage: String] = [:]
+    @FocusState private var focusedEntryStage: TaskStage?
 
     var body: some View {
         List {
@@ -177,6 +190,9 @@ struct TaskList: View {
                         if collapsedStages.contains(stage) {
                             collapsedStages.remove(stage)
                         } else {
+                            if focusedEntryStage == stage {
+                                focusedEntryStage = nil
+                            }
                             collapsedStages.insert(stage)
                         }
                     }
@@ -217,31 +233,43 @@ struct TaskList: View {
                         }
                     }
 
-                    Button {
-                        onAdd(stage)
-                    } label: {
-                        HStack {
-                            Circle()
-                                .stroke(
-                                    Color(uiColor: .systemGray3),
-                                    style: StrokeStyle(lineWidth: 1.5, lineCap: .round, dash: [1, 3])
-                                )
-                                .frame(width: 22, height: 22)
-                            Spacer()
-                        }
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 36)
-                        .contentShape(Rectangle())
-                        .overlay(alignment: .bottom) {
-                            if stage != TaskStage.allCases.last {
-                                Rectangle()
-                                    .fill(Color(uiColor: .separator).opacity(0.62))
-                                    .frame(height: 2)
-                                    .offset(y: 7)
-                            }
+                    HStack(spacing: 12) {
+                        Circle()
+                            .stroke(
+                                Color(uiColor: .systemGray3),
+                                style: StrokeStyle(lineWidth: 1.5, lineCap: .round, dash: [1, 3])
+                            )
+                            .frame(width: 22, height: 22)
+
+                        TextField(
+                            "",
+                            text: Binding(
+                                get: { inlineDrafts[stage, default: ""] },
+                                set: { inlineDrafts[stage] = $0 }
+                            )
+                        )
+                        .focused($focusedEntryStage, equals: stage)
+                        .submitLabel(.done)
+                        .onSubmit {
+                            submitInlineTask(in: stage)
                         }
                     }
-                    .buttonStyle(.plain)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 36)
+                    .contentShape(Rectangle())
+                    .simultaneousGesture(
+                        TapGesture().onEnded {
+                            focusedEntryStage = stage
+                        }
+                    )
+                    .overlay(alignment: .bottom) {
+                        if stage != TaskStage.allCases.last {
+                            Rectangle()
+                                .fill(Color(uiColor: .separator).opacity(0.62))
+                                .frame(height: 2)
+                                .offset(y: 7)
+                        }
+                    }
                     .accessibilityLabel("Add task to \(stage.rawValue)")
                     .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 7, trailing: 16))
                     .listRowSeparator(.hidden)
@@ -252,6 +280,16 @@ struct TaskList: View {
         .background(Color(uiColor: .systemBackground))
         .contentMargins(.bottom, 76, for: .scrollContent)
         .scrollDismissesKeyboard(.interactively)
+    }
+
+    private func submitInlineTask(in stage: TaskStage) {
+        let title = inlineDrafts[stage, default: ""]
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !title.isEmpty else { return }
+
+        onInlineAdd(title, stage)
+        inlineDrafts[stage] = ""
+        focusedEntryStage = stage
     }
 }
 
