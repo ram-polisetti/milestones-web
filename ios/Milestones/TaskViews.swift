@@ -215,6 +215,7 @@ struct TaskList: View {
                             Rectangle()
                                 .fill(Color(uiColor: .separator).opacity(0.62))
                                 .frame(height: 1)
+                                .padding(.leading, 34)
                                 .offset(y: 4)
                         }
                     }
