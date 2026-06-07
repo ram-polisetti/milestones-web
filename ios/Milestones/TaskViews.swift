@@ -215,14 +215,13 @@ struct TaskList: View {
                             Rectangle()
                                 .fill(Color(uiColor: .separator).opacity(0.62))
                                 .frame(height: 1)
-                                .padding(.leading, 34)
                                 .offset(y: 4)
                         }
                     }
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Add task to \(stage.rawValue)")
-                .listRowInsets(EdgeInsets(top: 0, leading: 27, bottom: 4, trailing: 16))
+                .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 4, trailing: 16))
                 .listRowSeparator(.hidden)
             }
         }
