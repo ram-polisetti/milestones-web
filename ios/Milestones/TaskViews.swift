@@ -21,6 +21,7 @@ struct TaskBoardView: View {
     @State private var showDescription = false
     @State private var showComposerHelp = false
     @State private var editingTask: MilestoneTask?
+    @State private var composerActivated = false
     @FocusState private var quickEntryFocused: Bool
 
     private var milestone: Milestone? {
@@ -41,7 +42,8 @@ struct TaskBoardView: View {
                             milestone: milestone,
                             onEdit: { editingTask = $0 },
                             onToggle: toggle,
-                            onDelete: delete
+                            onDelete: delete,
+                            onAdd: beginTask
                         )
                     } else {
                         KanbanView(
@@ -62,6 +64,7 @@ struct TaskBoardView: View {
                         recurrence: $quickRecurrence,
                         showDescription: $showDescription,
                         showDueDatePicker: $showDueDatePicker,
+                        isActivated: $composerActivated,
                         focused: $quickEntryFocused,
                         availableTags: store.tags,
                         submit: addQuickTask
@@ -143,6 +146,13 @@ struct TaskBoardView: View {
     private func delete(_ task: MilestoneTask) {
         store.deleteTask(projectID: projectID, milestoneID: milestoneID, taskID: task.id)
     }
+
+    private func beginTask(in stage: TaskStage) {
+        quickStage = stage
+        withAnimation(.easeInOut(duration: 0.18)) {
+            composerActivated = true
+        }
+    }
 }
 
 struct TaskList: View {
@@ -150,47 +160,51 @@ struct TaskList: View {
     let onEdit: (MilestoneTask) -> Void
     let onToggle: (MilestoneTask) -> Void
     let onDelete: (MilestoneTask) -> Void
+    let onAdd: (TaskStage) -> Void
 
     var body: some View {
         List {
             ForEach(TaskStage.allCases, id: \.self) { stage in
                 let tasks = milestone.tasks.filter { $0.stage == stage }
-                if !tasks.isEmpty {
-                    Section {
-                        ForEach(tasks) { task in
-                            TaskListRow(task: task) {
-                                onToggle(task)
-                            }
-                            .contentShape(Rectangle())
-                            .onTapGesture { onEdit(task) }
-                            .swipeActions(edge: .trailing) {
-                                Button("Delete", systemImage: "trash", role: .destructive) {
-                                    onDelete(task)
-                                }
-                            }
-                            .swipeActions(edge: .leading, allowsFullSwipe: false) {
-                                Button("Edit", systemImage: "pencil") {
-                                    onEdit(task)
-                                }
-                                .tint(.blue)
-                                Button(task.stage == .done ? "Reopen" : "Done", systemImage: "checkmark") {
-                                    onToggle(task)
-                                }
-                                .tint(task.stage == .done ? .gray : .green)
+                Section {
+                    ForEach(tasks) { task in
+                        TaskListRow(task: task) {
+                            onToggle(task)
+                        }
+                        .contentShape(Rectangle())
+                        .onTapGesture { onEdit(task) }
+                        .swipeActions(edge: .trailing) {
+                            Button("Delete", systemImage: "trash", role: .destructive) {
+                                onDelete(task)
                             }
                         }
-                    } header: {
-                        TaskSectionHeader(stage: stage, count: tasks.count)
+                        .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                            Button("Edit", systemImage: "pencil") {
+                                onEdit(task)
+                            }
+                            .tint(.blue)
+                            Button(task.stage == .done ? "Reopen" : "Done", systemImage: "checkmark") {
+                                onToggle(task)
+                            }
+                            .tint(task.stage == .done ? .gray : .green)
+                        }
                     }
+
+                    Button {
+                        onAdd(stage)
+                    } label: {
+                        Label("Add Task", systemImage: "plus")
+                            .font(.body)
+                            .foregroundStyle(stage.color)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.vertical, 5)
+                    }
+                    .buttonStyle(.plain)
+                    .listRowInsets(EdgeInsets(top: 0, leading: 38, bottom: 0, trailing: 16))
+                    .listRowSeparator(.hidden)
+                } header: {
+                    TaskSectionHeader(stage: stage, count: tasks.count)
                 }
-            }
-            if milestone.tasks.isEmpty {
-                ContentUnavailableView {
-                    Label("No Tasks Yet", systemImage: "checklist")
-                } description: {
-                    Text("Use the task composer below to add the first task.")
-                }
-                .listRowBackground(Color.clear)
             }
         }
         .listStyle(.plain)
@@ -477,11 +491,11 @@ struct TaskComposer: View {
     @Binding var recurrence: TaskRecurrence?
     @Binding var showDescription: Bool
     @Binding var showDueDatePicker: Bool
+    @Binding var isActivated: Bool
     var focused: FocusState<Bool>.Binding
     let availableTags: [String]
     let submit: () -> Void
     @State private var showOptions = false
-    @State private var composerActivated = false
 
     private var hasDraftDetails: Bool {
         showDescription
@@ -493,7 +507,7 @@ struct TaskComposer: View {
     }
 
     private var isExpanded: Bool {
-        composerActivated
+        isActivated
             || focused.wrappedValue
             || !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             || hasDraftDetails
@@ -501,7 +515,7 @@ struct TaskComposer: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            if composerActivated {
+            if isActivated {
                 TextField("Add a new task…", text: $text, axis: .vertical)
                     .lineLimit(3)
                     .focused(focused)
@@ -656,17 +670,20 @@ struct TaskComposer: View {
         .background(.clear)
         .ignoresSafeArea(.container, edges: .bottom)
         .animation(.snappy, value: isExpanded)
-        .task(id: composerActivated) {
-            guard composerActivated else { return }
+        .task(id: isActivated) {
+            guard isActivated else { return }
+            withAnimation(.easeInOut(duration: 0.18)) {
+                showOptions = true
+            }
             try? await Task.sleep(for: .milliseconds(200))
-            guard !Task.isCancelled, composerActivated else { return }
+            guard !Task.isCancelled, isActivated else { return }
             focused.wrappedValue = true
         }
     }
 
     private func activateComposer() {
         withAnimation(.easeInOut(duration: 0.18)) {
-            composerActivated = true
+            isActivated = true
             showOptions = true
         }
     }
@@ -677,7 +694,7 @@ struct TaskComposer: View {
         focused.wrappedValue = false
         withAnimation(.easeInOut(duration: 0.25)) {
             showOptions = false
-            composerActivated = false
+            isActivated = false
         }
     }
 }
