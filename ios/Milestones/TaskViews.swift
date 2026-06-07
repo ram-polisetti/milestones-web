@@ -187,117 +187,135 @@ struct TaskList: View {
     @FocusState private var focusedEntryStage: TaskStage?
 
     var body: some View {
-        List {
-            ForEach(TaskStage.allCases, id: \.self) { stage in
-                let tasks = milestone.tasks.filter { $0.stage == stage }
-                TaskSectionHeader(
-                    stage: stage,
-                    count: tasks.count,
-                    isCollapsed: collapsedStages.contains(stage)
-                ) {
-                    withAnimation(.snappy) {
-                        if collapsedStages.contains(stage) {
-                            collapsedStages.remove(stage)
-                        } else {
-                            if focusedEntryStage == stage {
-                                focusedEntryStage = nil
-                            }
-                            collapsedStages.insert(stage)
-                        }
-                    }
-                }
-                    .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
-                    .listRowSeparator(.hidden)
-                    .listRowBackground(Color.clear)
-
-                if collapsedStages.contains(stage) {
-                    if stage != TaskStage.allCases.last {
-                        Rectangle()
-                            .fill(Color(uiColor: .separator).opacity(0.62))
-                            .frame(height: 2)
-                            .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 7, trailing: 16))
-                            .listRowSeparator(.hidden)
-                    }
-                } else {
-                    ForEach(tasks) { task in
-                        TaskListRow(task: task) {
-                            onToggle(task)
-                        }
-                        .contentShape(Rectangle())
-                        .onTapGesture { onEdit(task) }
-                        .swipeActions(edge: .trailing) {
-                            Button("Delete", systemImage: "trash", role: .destructive) {
-                                onDelete(task)
-                            }
-                        }
-                        .swipeActions(edge: .leading, allowsFullSwipe: false) {
-                            Button("Edit", systemImage: "pencil") {
-                                onEdit(task)
-                            }
-                            .tint(.purple)
-                            Button(task.stage == .done ? "Reopen" : "Done", systemImage: "checkmark") {
-                                onToggle(task)
-                            }
-                            .tint(task.stage == .done ? .orange : .green)
-                        }
-                    }
-
-                    HStack(spacing: 12) {
-                        Circle()
-                            .stroke(
-                                Color(uiColor: .systemGray3),
-                                style: StrokeStyle(lineWidth: 1.5, lineCap: .round, dash: [1, 3])
-                            )
-                            .frame(width: 22, height: 22)
-
-                        TextField(
-                            "",
-                            text: Binding(
-                                get: { inlineStage == stage ? inlineTitle : "" },
-                                set: { newValue in
-                                    if inlineStage != stage {
-                                        onBeginInlineEntry(stage)
-                                    }
-                                    inlineTitle = newValue
+        ScrollViewReader { proxy in
+            List {
+                ForEach(TaskStage.allCases, id: \.self) { stage in
+                    let tasks = milestone.tasks.filter { $0.stage == stage }
+                    TaskSectionHeader(
+                        stage: stage,
+                        count: tasks.count,
+                        isCollapsed: collapsedStages.contains(stage)
+                    ) {
+                        withAnimation(.snappy) {
+                            if collapsedStages.contains(stage) {
+                                collapsedStages.remove(stage)
+                            } else {
+                                if focusedEntryStage == stage {
+                                    focusedEntryStage = nil
                                 }
-                            )
-                        )
-                        .focused($focusedEntryStage, equals: stage)
-                        .submitLabel(.done)
-                        .onSubmit {
-                            submitInlineTask()
+                                collapsedStages.insert(stage)
+                            }
                         }
                     }
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 36)
-                    .contentShape(Rectangle())
-                    .simultaneousGesture(
-                        TapGesture().onEnded {
-                            onBeginInlineEntry(stage)
-                            focusedEntryStage = stage
-                        }
-                    )
-                    .overlay(alignment: .bottom) {
+                        .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
+
+                    if collapsedStages.contains(stage) {
                         if stage != TaskStage.allCases.last {
                             Rectangle()
                                 .fill(Color(uiColor: .separator).opacity(0.62))
                                 .frame(height: 2)
-                                .offset(y: 7)
+                                .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 7, trailing: 16))
+                                .listRowSeparator(.hidden)
                         }
+                    } else {
+                        ForEach(tasks) { task in
+                            TaskListRow(task: task) {
+                                onToggle(task)
+                            }
+                            .contentShape(Rectangle())
+                            .onTapGesture { onEdit(task) }
+                            .swipeActions(edge: .trailing) {
+                                Button("Delete", systemImage: "trash", role: .destructive) {
+                                    onDelete(task)
+                                }
+                            }
+                            .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                                Button("Edit", systemImage: "pencil") {
+                                    onEdit(task)
+                                }
+                                .tint(.purple)
+                                Button(task.stage == .done ? "Reopen" : "Done", systemImage: "checkmark") {
+                                    onToggle(task)
+                                }
+                                .tint(task.stage == .done ? .orange : .green)
+                            }
+                        }
+
+                        HStack(spacing: 12) {
+                            Circle()
+                                .stroke(
+                                    Color(uiColor: .systemGray3),
+                                    style: StrokeStyle(lineWidth: 1.5, lineCap: .round, dash: [1, 3])
+                                )
+                                .frame(width: 22, height: 22)
+
+                            TextField(
+                                "",
+                                text: Binding(
+                                    get: { inlineStage == stage ? inlineTitle : "" },
+                                    set: { newValue in
+                                        if inlineStage != stage {
+                                            onBeginInlineEntry(stage)
+                                        }
+                                        inlineTitle = newValue
+                                    }
+                                )
+                            )
+                            .focused($focusedEntryStage, equals: stage)
+                            .submitLabel(.done)
+                            .onSubmit {
+                                submitInlineTask()
+                            }
+                        }
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 36)
+                        .contentShape(Rectangle())
+                        .simultaneousGesture(
+                            TapGesture().onEnded {
+                                onBeginInlineEntry(stage)
+                                focusedEntryStage = stage
+                                scrollEntry(stage, with: proxy)
+                            }
+                        )
+                        .overlay(alignment: .bottom) {
+                            if stage != TaskStage.allCases.last {
+                                Rectangle()
+                                    .fill(Color(uiColor: .separator).opacity(0.62))
+                                    .frame(height: 2)
+                                    .offset(y: 7)
+                            }
+                        }
+                        .id(inlineEntryID(for: stage))
+                        .accessibilityLabel("Add task to \(stage.rawValue)")
+                        .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 7, trailing: 16))
+                        .listRowSeparator(.hidden)
                     }
-                    .accessibilityLabel("Add task to \(stage.rawValue)")
-                    .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 7, trailing: 16))
-                    .listRowSeparator(.hidden)
+                }
+            }
+            .listStyle(.plain)
+            .background(Color(uiColor: .systemBackground))
+            .contentMargins(.bottom, inlineStage == nil ? 76 : 210, for: .scrollContent)
+            .scrollDismissesKeyboard(.interactively)
+            .onChange(of: inlineStage) { _, stage in
+                if let stage {
+                    scrollEntry(stage, with: proxy)
+                } else {
+                    focusedEntryStage = nil
                 }
             }
         }
-        .listStyle(.plain)
-        .background(Color(uiColor: .systemBackground))
-        .contentMargins(.bottom, 76, for: .scrollContent)
-        .scrollDismissesKeyboard(.interactively)
-        .onChange(of: inlineStage) { _, stage in
-            if stage == nil {
-                focusedEntryStage = nil
+    }
+
+    private func inlineEntryID(for stage: TaskStage) -> String {
+        "inline-entry-\(stage.rawValue)"
+    }
+
+    private func scrollEntry(_ stage: TaskStage, with proxy: ScrollViewProxy) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
+            withAnimation(.easeOut(duration: 0.25)) {
+                proxy.scrollTo(inlineEntryID(for: stage), anchor: .center)
             }
         }
     }
