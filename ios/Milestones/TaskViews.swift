@@ -167,58 +167,65 @@ struct TaskList: View {
         List {
             ForEach(TaskStage.allCases, id: \.self) { stage in
                 let tasks = milestone.tasks.filter { $0.stage == stage }
-                Section {
-                    ForEach(tasks) { task in
-                        TaskListRow(task: task) {
-                            onToggle(task)
-                        }
-                        .contentShape(Rectangle())
-                        .onTapGesture { onEdit(task) }
-                        .swipeActions(edge: .trailing) {
-                            Button("Delete", systemImage: "trash", role: .destructive) {
-                                onDelete(task)
-                            }
-                        }
-                        .swipeActions(edge: .leading, allowsFullSwipe: false) {
-                            Button("Edit", systemImage: "pencil") {
-                                onEdit(task)
-                            }
-                            .tint(.purple)
-                            Button(task.stage == .done ? "Reopen" : "Done", systemImage: "checkmark") {
-                                onToggle(task)
-                            }
-                            .tint(task.stage == .done ? .orange : .green)
-                        }
-                    }
-
-                    Button {
-                        onAdd(stage)
-                    } label: {
-                        Color.clear
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 44)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Add task to \(stage.rawValue)")
+                TaskSectionHeader(stage: stage, count: tasks.count)
                     .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
                     .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
 
-                    if stage != TaskStage.allCases.last {
-                        Rectangle()
-                            .fill(Color(uiColor: .separator).opacity(0.28))
-                            .frame(height: 1)
-                            .padding(.vertical, 16)
-                            .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
-                            .listRowSeparator(.hidden)
+                ForEach(tasks) { task in
+                    TaskListRow(task: task) {
+                        onToggle(task)
                     }
-                } header: {
-                    TaskSectionHeader(stage: stage, count: tasks.count)
+                    .contentShape(Rectangle())
+                    .onTapGesture { onEdit(task) }
+                    .swipeActions(edge: .trailing) {
+                        Button("Delete", systemImage: "trash", role: .destructive) {
+                            onDelete(task)
+                        }
+                    }
+                    .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                        Button("Edit", systemImage: "pencil") {
+                            onEdit(task)
+                        }
+                        .tint(.purple)
+                        Button(task.stage == .done ? "Reopen" : "Done", systemImage: "checkmark") {
+                            onToggle(task)
+                        }
+                        .tint(task.stage == .done ? .orange : .green)
+                    }
                 }
+
+                Button {
+                    onAdd(stage)
+                } label: {
+                    HStack {
+                        Circle()
+                            .stroke(
+                                Color(uiColor: .systemGray3),
+                                style: StrokeStyle(lineWidth: 1.5, lineCap: .round, dash: [1, 3])
+                            )
+                            .frame(width: 22, height: 22)
+                        Spacer()
+                    }
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 36)
+                    .contentShape(Rectangle())
+                    .overlay(alignment: .bottom) {
+                        if stage != TaskStage.allCases.last {
+                            Rectangle()
+                                .fill(Color(uiColor: .separator).opacity(0.62))
+                                .frame(height: 1)
+                                .offset(y: 4)
+                        }
+                    }
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Add task to \(stage.rawValue)")
+                .listRowInsets(EdgeInsets(top: 0, leading: 27, bottom: 4, trailing: 16))
+                .listRowSeparator(.hidden)
             }
         }
         .listStyle(.plain)
-        .listSectionSpacing(.custom(8))
         .background(Color(uiColor: .systemBackground))
         .contentMargins(.bottom, 76, for: .scrollContent)
         .scrollDismissesKeyboard(.interactively)
@@ -240,8 +247,8 @@ struct TaskSectionHeader: View {
                 .foregroundStyle(.secondary)
             Spacer()
         }
-        .padding(.top, 14)
-        .padding(.bottom, 8)
+        .padding(.top, 7)
+        .padding(.bottom, 7)
     }
 }
 
@@ -262,16 +269,16 @@ struct TaskListRow: View {
                         Image(systemName: "checkmark")
                             .font(.system(size: 10, weight: .bold))
                             .foregroundStyle(.white)
-                    } else if task.stage == .inProgress {
-                        Circle()
-                            .fill(completionColor.opacity(0.18))
-                            .padding(3.5)
                     }
                 }
                 .frame(width: 22, height: 22)
+                .frame(width: 44, height: 44)
+                .contentShape(Circle())
             }
             .buttonStyle(.plain)
-            .padding(.top, 1)
+            .padding(.top, -10)
+            .padding(.leading, -11)
+            .padding(.trailing, -11)
             .accessibilityLabel(task.stage == .done ? "Mark incomplete" : "Mark complete")
 
             VStack(alignment: .leading, spacing: 4) {
@@ -324,10 +331,7 @@ struct TaskListRow: View {
     }
 
     private var completionColor: Color {
-        switch task.stage {
-        case .todo: .gray
-        case .inProgress, .done: .blue
-        }
+        task.stage == .done ? .blue : Color(uiColor: .systemGray2)
     }
 
     private var hasMetadata: Bool {
