@@ -214,14 +214,14 @@ struct TaskList: View {
                         if stage != TaskStage.allCases.last {
                             Rectangle()
                                 .fill(Color(uiColor: .separator).opacity(0.62))
-                                .frame(height: 1)
-                                .offset(y: 4)
+                                .frame(height: 2)
+                                .offset(y: 7)
                         }
                     }
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Add task to \(stage.rawValue)")
-                .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 4, trailing: 16))
+                .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 7, trailing: 16))
                 .listRowSeparator(.hidden)
             }
         }
@@ -324,7 +324,7 @@ struct TaskListRow: View {
                 }
             }
         }
-        .padding(.vertical, 9)
+        .padding(.vertical, 6)
         .listRowInsets(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
         .listRowSeparator(.hidden)
         .accessibilityElement(children: .combine)
